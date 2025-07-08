@@ -5,7 +5,9 @@
 
 #marketable yields from total yield
 
-market_yield <- 0.75 #typically between 70-80%
+market_yield_low <- 0.70 
+
+market_yield_high <- 0.90
 
 market_price <- 400.92 # $CAD/t.
 
@@ -48,7 +50,7 @@ return(costs)
 
 }
 
-calc.yearly.costs <- function(yield_gain, type){
+calc.yearly.costs <- function(yield_gain, type, threshold){
   irrigated <- irrigated(yield_gain)
   if (irrigated){
     costs <- type$ownership + type$operation
