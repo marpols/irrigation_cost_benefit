@@ -9,7 +9,7 @@ overall_hist_gs <- historical |> filter(period == "GS")
 overall_hist_julaug <- historical |> filter(period == "julaug")
 
 #processed simulation data with all costs and earnings calculated
-cost_benefit <- readRDS("data/gross_benefit_all_CORRECTED.RDS")
+cost_benefit <- readRDS("data/Capital_Capital_all.RDS")
 gs_cost_benefit <- cost_benefit |> filter(period == "GS")
 julaug_cost_benefit <- cost_benefit |> filter(period == "julaug")
 

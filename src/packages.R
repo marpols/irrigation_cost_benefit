@@ -1,5 +1,5 @@
 packages <- c("SticsRPacks", "stringr", "dplyr", "ggplot2", "rlang", "scales",
-              "readxl", "purrr", "precintcon", "tidyr")
+              "readxl", "writexl", "purrr", "precintcon", "tidyr")
 
 invisible(lapply(packages, function(p) {
   if (!(p %in% installed.packages())) {

@@ -479,10 +479,10 @@ combos <- expand.grid(
 
 
 
-plot_list <- list()
-for (i in 1:nrow(combos)){
-  plot_list[[paste(combos[i,1],combos[i,2], sep = ", ")]] <- annual.net.benefit.plot(annual_net_benefit, combos[i,1], combos[i,2]) 
-}
+# plot_list <- list()
+# for (i in 1:nrow(combos)){
+#   plot_list[[paste(combos[i,1],combos[i,2], sep = ", ")]] <- annual.net.benefit.plot(annual_net_benefit, combos[i,1], combos[i,2]) 
+# }
 
 
 

@@ -88,82 +88,27 @@ calc.sic <- function(data, irr_system){
 sic.eqn <- function(OWS = 1, x = 1, UWC = 1, AOC = 1){
 #Jiang et al., 2022 - Equation (1)
 
+  # If ownership costs = yearly depreciation + interest
+  # if(x < OWS){
+  #   SIC <- ((OWS - x) / 152) * UWC + AOC
+  #   message(sprintf("SIC = ((%f.2 - %f.2)/ 152) * %f.2 + %f.2\n    = %f.2", OWS, x, UWC, AOC, SIC))
+  # } else {
+  #   SIC <- AOC
+  #   message(sprintf("SIC = %f.2", SIC))
+  # }
+  
+  # If ownership is considered a one time expense
   if(x < OWS){
-    SIC <- ((OWS - x) / 152) * UWC + AOC
+    SIC <- ((OWS - x) / 152) * UWC
     message(sprintf("SIC = ((%f.2 - %f.2)/ 152) * %f.2 + %f.2\n    = %f.2", OWS, x, UWC, AOC, SIC))
   } else {
-    SIC <- AOC
+    SIC <- 0
     message(sprintf("SIC = %f.2", SIC))
   }
   SIC
 }
 
-total.costs <- function(data, p){
-  
-  irrigation_systems <- irrigation.costs()
-  
-  lapply(data, function(d){
-    d <- d |> filter(period == p)
-    
-    r1 <- d |> filter(ian %in% rotation_2001)
-    r2 <- d |> filter(ian %in% rotation_2002)
-    r3 <- d |> filter(ian %in% rotation_2003)
-    
-    lapply(irrigation_systems, function(irr){
-      r1costs <- irr$total.asset + sum(r1[, names(r1) == irr$type]) +
-        sum(!(d$ian %in% rotation_2001))*irr$ownership
-      r2costs <- irr$total.asset + sum(r2[, names(r2) == irr$type]) +
-        sum(!(d$ian %in% rotation_2002))*irr$ownership
-      r3costs <- irr$total.asset + sum(r3[, names(r3) == irr$type]) +
-        sum(!(d$ian %in% rotation_2003))*irr$ownership
-      
-      df <- data.frame(unique(r1$soil),
-                 unique(r1$stn_code),
-                 unique(r1$period),
-                 irr$type,
-                 r1costs,
-                 r2costs,
-                 r3costs)
-      names(df) <- c("soil", "stn_code", "period", "irrigation type",
-                     "rotation 1 costs", "rotation 2 costs", "rotation 3 costs")
-      df
-    })
-  })
-}
 
-total.gross.benefit <- function(data, p){
-  
-  lapply(data, function(d){
-    
-    d <- d |> filter(period == p)
-    
-    r1 <- d |> filter(ian %in% rotation_2001)
-    r2 <- d |> filter(ian %in% rotation_2002)
-    r3 <- d |> filter(ian %in% rotation_2003)
-    
-    r1grosslow <- sum(r1$`Gross Benefit, low`)
-    r1grosshigh <- sum(r1$`Gross Benefit, high`)
-    r2grosslow <- sum(r2$`Gross Benefit, low`)
-    r2grosshigh <- sum(r2$`Gross Benefit, high`)
-    r3grosslow <- sum(r3$`Gross Benefit, low`)
-    r3grosshigh <- sum(r3$`Gross Benefit, high`)
-    
-    df <- data.frame(unique(r1$soil),
-               unique(r1$stn_code),
-               unique(r1$period),
-               r1grosslow,
-               r1grosshigh,
-               r2grosslow,
-               r2grosshigh,
-               r3grosslow,
-               r3grosshigh)
-    names(df) <- c("soil", "stn_code", "period", "rotation 1,
-                   low mrkt gross", "rotation 1, high mrkt gross", "rotation 2,
-                   low mrkt gross", "rotation 2, high mrkt gross", "rotation 3,
-                   low mrkt gross", "rotation 3, high mrkt gross")
-    df
-  })
-}
 
 cum.costs <- function(df) {
   irrigation_systems <- irrigation.costs()
@@ -172,6 +117,7 @@ cum.costs <- function(df) {
     
     col_name <- sprintf("costs.yearly, %s", irr$type)
     df[col_name] <- df[, names(df) == irr$type]
+    df[1, col_name] <- df[1, col_name] + irr$total.asset #If ownership is considered a one time expense
 
     cum_col_name <- sprintf("costs.cum, %s", irr$type)
     df[cum_col_name] <- cumsum(df[col_name])
@@ -182,7 +128,9 @@ cum.costs <- function(df) {
       yrly_col <- sprintf("rot%dcosts.yearly, %s", i, irr$type)
       
       df[df$ian %in% get(rot), yrly_col] <- df[(df$ian %in% get(rot)), names(df) == irr$type]
-      df[!(df$ian %in% get(rot)), yrly_col] <- irr$ownership
+      #df[!(df$ian %in% get(rot)), yrly_col] <- irr$ownership #If ownership costs = yearly depreciation + interest
+      df[!(df$ian %in% get(rot)), yrly_col] <- 0 #If ownership is considered a one time expense
+      df[df$ian %in% get(rot), yrly_col][i] <- df[df$ian %in% get(rot), yrly_col][i] + irr$total.asset #If ownership is considered a one time expense
       
       if (i %in% 2:3) {
         prevyrs <- 1:(which(df$ian == get(rot)[1]) - 1)
