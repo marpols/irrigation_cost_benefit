@@ -51,4 +51,15 @@ for (i in 3:6){
   annual_net_benefit[[paste(col,"high", sep = ".")]] <- (annual_net_benefit[[8]] - annual_net_benefit[[i]])/24
 }
 
+payback_period <- function(initial_capital, grossb, irr){
+  
+  annual_ncb <- net_cash_benefit()
+  return(initial_capital/annual_ncb)
+}
+
+net_cash_benefit <- function(annual_gross, operating_costs){
+  annual_gross - annual_operation
+}
+
+
 

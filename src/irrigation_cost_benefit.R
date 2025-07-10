@@ -1,7 +1,7 @@
 lapply(list.files("src", pattern = ".R", full.names = T), source)
 
 outdir <- rstudioapi::selectDirectory()
-outdir <- "~/Research/Project - Irrigation Assessment/Results - 20250706"
+outdir <- "~/Research/Project - Irrigation Assessment/Results - 20250710_wCaptial"
 
 javastics_path <- "C:\\Users\\marpo\\Documents\\Research\\STICS\\JavaSTICS-1.5.3-STICS-10.3.0"
 workspace <- "irrigation_assessment"
@@ -32,5 +32,11 @@ sim_end <- unique(get_param_xml(file = usms_path, "datefin")[[1]][[1]])
 
 data_summary <- readRDS("data/hills_yield_summary.RDS")
 
-cost.benefit.data(data_summary, "gross_benefit")
+data_summary <- lapply(data_summary, function(x){
+  x <- x[,-c(25:28)]
+  x
+})
+data_summary <- calculate.costs(data_summary) |> calculate.gross.benefit()
+
+cost.benefit.data(data_summary, "Capital")
 

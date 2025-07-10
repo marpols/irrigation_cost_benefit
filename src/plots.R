@@ -566,10 +566,10 @@ combos <- expand.grid(
 # outdir <- "~/Research/Project - Irrigation Assessment/Figures - 20250709_CORRECTED"
 # dir.create(outdir)
 # 
-# combos <- expand.grid(
-#   stations = unique(gs_cost_benefit$stn_code),
-#   soils = unique(gs_cost_benefit$soil),
-#   stringsAsFactors = FALSE)
+combos <- expand.grid(
+  stations = unique(gs_cost_benefit$stn_code),
+  soils = unique(gs_cost_benefit$soil),
+  stringsAsFactors = FALSE)
 # 
 # combos_rot <- expand.grid(
 #   stations = unique(gs_cost_benefit$stn_code),
@@ -577,9 +577,9 @@ combos <- expand.grid(
 #   rotation = 1:3,
 #   stringsAsFactors = FALSE)
 # 
-# for(i in 1:nrow(combos)){
-#   cost.gains.all.years(gs_cost_benefit, combos[i,1], combos[i,2])
-# }
+for(i in 1:nrow(combos)){
+  cost.gains.all.years(gs_cost_benefit, combos[i,1], combos[i,2])
+}
 # 
 # for(i in 1:nrow(combos_rot)){
 #   cost.v.gains(gs_cost_benefit,
