@@ -1,4 +1,4 @@
-irrigated <- function(factor, threshold, compare){
+is.irrigated <- function(factor, threshold, compare){
   if(compare == "lt") return(factor < threshold) else return(factor > threshold)
 }
 

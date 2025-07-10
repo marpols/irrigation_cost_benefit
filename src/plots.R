@@ -1,11 +1,3 @@
-yield_data <- readRDS("data/hills_yield_all.RDS")
-gs_data <- yield_data |> filter(period == "GS")
-julaug_data <- yield_data |> filter(period == "julaug")
-historical <- readRDS("data/historical_avgs.RDS")
-overall_hist_gs <- historical |> filter(period == "GS")
-overall_hist_julaug <- historical |> filter(period == "julaug")
-
-
 make.climate.plots <- function(usm){
   
   station <- get.weather.station(usm)
@@ -128,6 +120,10 @@ make.box.plot <- function(data, hist, type, div, span = ""){
                        y = `Yield, stress`,
                        group = ian),
                    fill = "#5CB564") +
+      geom_boxplot(aes(x = ian,
+                       y = `Yield, no stress`,
+                       group = ian),
+                   fill = "lightgreen", position = "dodge") +
       scale_y_continuous(
         sec.axis = sec_axis(~ . * div, name = "Precipitation (mm)")
       ) +
@@ -240,9 +236,6 @@ make.cwr.plot <- function(data, hist, div,
   mid <- mean(data_summary$mean_cwr)
   max <- max(data_summary$mean_cwr)
   
-  colours <- list(precip = c("#EFFC00", "#00D4FF","#090979"),
-                  temp = c("#00B1F7", "#FFD000", "#FF0000"))
-  
   cwr.plot <- ggplot(data_summary, aes(x = year, y = mean_cwr, fill = mean_cwr)) +
     geom_col() +
     scale_fill_gradient2(low = "#FF0000", mid = "#FFD000", high = "#00B1F7",
@@ -258,13 +251,340 @@ make.cwr.plot <- function(data, hist, div,
   
 }
 
-make.box.plot(gs_data, overall_hist_gs,"precip", 10, "Growing Season")
-make.box.plot(julaug_data, overall_hist_julaug,"precip", 5, "July to August") 
 
-make.box.plot.station(gs_data, overall_hist_gs, 10,
-                      "Growing Season", "Summerside")
+cost.v.gains <- function(data,
+                         rotation = 1,
+                         stn,
+                         soil_name){
+  #cost v gross benefit plots per rotation
+  #(assuming no irrigation use on two non-potato years)
+  
+  soil_stn_df <- gs_cost_benefit |> filter(stn_code == stn,
+                                           soil == soil_name)
+  r <- sprintf("rot%d", rotation)
+  
+  cost_col_1 <- sprintf("%scosts.cum, pivot I", r)
+  cost_col_2 <- sprintf("%scosts.cum, pivot II", r) 
+  cost_col_3 <- sprintf("%scosts.cum, hose reel + sprinkler", r) 
+  cost_col_4 <- sprintf("%scosts.cum, hose reel + boom cart", r) 
+  
+  gross_col_low <- sprintf("%sgross.cum, low", r)
+  gross_col_high <- sprintf("%sgross.cum, high", r)
 
-make.box.plot.soil(gs_data, overall_hist_gs, 10,
-                      "Growing Season", "CTW")
+  
+  ggplot(soil_stn_df, aes(x = ian)) +
+    geom_step(aes(y = .data[[gross_col_high]]/1000,
+                  colour = "Gross Benefit, 90%"),
+              linewidth = 1.2) +
+    geom_step(aes(y = .data[[gross_col_low]]/1000,
+                  colour = "Gross Benefit, 70%"),
+              linewidth = 1.2) +
+    geom_step(aes(y = .data[[cost_col_1]]/1000,
+                  colour = "Pivot I"),
+              linewidth = 0.7) +
+    geom_step(aes(y = .data[[cost_col_2]]/1000,
+                  colour = "Pivot II"),
+              linewidth = 0.7) +
+    geom_step(aes(y = .data[[cost_col_3]]/1000,
+                  colour = "Hose Reel, Sprinkler"),
+              linewidth = 0.7) +
+    geom_step(aes(y = .data[[cost_col_4]]/1000,
+                  colour = "Hose Reel, Boom Cart"),
+              linewidth = 0.7) +
+    scale_color_manual(values = c("Gross Benefit, 70%" = "#9ACD32",
+                                  "Gross Benefit, 90%" = "#367c2b",
+                                  "Pivot I" = "#fd5c63",
+                                  "Pivot II" = "#9e1b32",
+                                  "Hose Reel, Sprinkler" = "#00BFFF",
+                                  "Hose Reel, Boom Cart" = "#1C39BB")) +
+    scale_x_continuous(name = "Year",
+                       breaks = seq(min(data$ian), max(data$ian), by = 1)) +
+    scale_y_continuous(name = "CAD $ thousands / ha.",
+                       breaks = seq(5,30, by = 5)) +
+    labs(title = "Cumulative Costs and Gross Benefit 2001 - 2024",
+         subtitle = sprintf("%s, %s\n Rotation begins in 200%d",
+                            stringr::str_to_title(unique(soil_stn_df$station)),
+                            soil_name,
+                            rotation),
+         colour = "") +
+    guides() +
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          panel.grid.minor.x = element_blank())
+  
+  ggsave(sprintf("costbenefit_%s_%s_rot%d.png", stn, soil_name, rotation),
+         path = file.path(outdir, "rotations"),
+         width = 20,
+         height = 15,
+         units = "cm")
+  
+}
 
-make.cwr.plot(gs_data)
+cost.gains.all.years <- function(dataset, stn, soil_name){
+  
+  soil_stn_df <- dataset |> filter(stn_code == stn,
+                                           soil == soil_name)
+  #cost v gross benefit plots
+  #assuming irrgation use each year 
+  #(farmer has at least one field in potato each year)
+  
+  print(paste0(stn, "_", soil_name))
+  
+  plot <- ggplot(soil_stn_df, aes(x = ian)) +
+    geom_step(aes(y = `gross.cum, high`/1000,
+                  colour = "Gross Benefit, 90%"),
+              linewidth = 1.2) +
+    geom_step(aes(y = `gross.cum, low`/1000,
+                  colour = "Gross Benefit, 70%"),
+              linewidth = 1.2) +
+    geom_step(aes(y = `costs.cum, pivot I`/1000,
+                  colour = "Pivot I"),
+              linewidth = 0.7) +
+    geom_step(aes(y = `costs.cum, pivot II`/1000,
+                  colour = "Pivot II"),
+              linewidth = 0.7) +
+    geom_step(aes(y = `costs.cum, hose reel + sprinkler`/1000,
+                  colour = "Hose Reel, Sprinkler"),
+              linewidth = 0.7) +
+    geom_step(aes(y = `costs.cum, hose reel + boom cart`/1000,
+                  colour = "Hose Reel, Boom Cart"),
+              linewidth = 0.7) +
+    scale_color_manual(values = c("Gross Benefit, 70%" = "#9ACD32",
+                                  "Gross Benefit, 90%" = "#367c2b",
+                                  "Pivot I" = "#fd5c63",
+                                  "Pivot II" = "#9e1b32",
+                                  "Hose Reel, Sprinkler" = "#00BFFF",
+                                  "Hose Reel, Boom Cart" = "#1C39BB")) +
+    scale_x_continuous(name = "Year",
+                       breaks = seq(min(data$ian), max(data$ian), by = 1)) +
+    scale_y_continuous(name = "CAD $ thousands / ha.",
+                       breaks = seq(5,30, by = 5)) +
+    labs(title = "Cumulative Costs and Gross Benefit 2001 - 2024",
+         subtitle = sprintf("%s, %s", stringr::str_to_title(unique(soil_stn_df$station)),
+                            soil_name),
+         colour = "") +
+    guides() +
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          panel.grid.minor.x = element_blank())
+  
+  ggsave(sprintf("costbenefit_%s_%s.png", stn, soil_name),
+         plot = plot,
+         path = outdir,
+         width = 20,
+         height = 15,
+         units = "cm")
+}
+
+marketable.yield.gain.plot <- function(dataset, mrkt_yld){
+  
+  col <- grep(mrkt_yld, names(gain_by_soilstn), value = T)
+  
+  plot <- ggplot(dataset) +
+    geom_col(aes(x = stn_code, y = .data[[col]], fill = soil),
+             position = "dodge") +
+    scale_fill_manual(values = c(
+      "ARY" = "#33A02C",
+      "CTW" = "#CAB2D6",
+      "CLO" = "#FDBF6F")) +
+    scale_y_continuous(breaks = seq(0,200, by = 50),
+                       sec.axis = sec_axis(~.* 8.92, name = "Cwt / ac.")) +
+    coord_cartesian(ylim = c(0,200)) +
+    labs(title = "Total Marketable Yield Gain 2001 - 2024",
+         subtitle = sprintf("Marketable Yield %s of Total Yield",
+                            if(mrkt_yld == "low") "70%" else "90%"),
+         x = "weather station",
+         y = "t/ha.",
+         fill = "Soil") +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+  plot
+  
+  ggsave(sprintf("total_yield_gain_%s.png", mrkt_yld), 
+         plot = plot,
+         path = outdir,
+         width = 20,
+         height = 15,
+         units = "cm")
+}
+
+annual.net.benefit.plot <- function(dataset, irr_name, mrkt_yld){
+  
+  x <- grep_custom(paste(irr_name, mrkt_yld, sep = " "), names(dataset))
+  col <- names(dataset)[x]
+  
+  plot <- ggplot(dataset, aes(x = stn_code, fill = soil)) +
+    geom_col(aes(y = .data[[col]]),
+             position = "dodge") +
+    geom_hline(yintercept = 0,
+               linewidth = 0.5) +
+    scale_fill_manual(values = c(
+      "ARY" = "#33A02C",
+      "CTW" = "#CAB2D6",
+      "CLO" = "#FDBF6F")) +
+    coord_cartesian(ylim = c(-550, 1500)) +
+    labs(title = "Annual Net Benefit",
+         subtitle = sprintf("%s Irrigation\n Marketable Yield %s of Total Yield",
+                            irr_name,
+                            if(mrkt_yld == "low") "70%" else "90%"),
+         y = "$/ha./year",
+         x = "weather station",
+         fill = "Soil") +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+  
+  ggsave(sprintf("annual_net_benefit_%s_%s.png",irr_name, mrkt_yld), 
+         plot = plot,
+         path = outdir,
+         width = 20,
+         height = 15,
+         units = "cm")
+
+}
+
+tokenize <- function(x) {
+  x |>
+    str_replace_all("([a-z])([A-Z])", "\\1 \\2") |>  # camelCase split
+    str_replace_all("[^a-zA-Z0-9]+", " ") |>         # non-alphanumeric to space
+    str_to_lower() |>
+    str_split(" +") |>
+    unlist()
+}
+
+contains_all_tokens <- function(text, phrase) {
+  text_tokens <- tokenize(text)
+  phrase_tokens <- tokenize(phrase)
+  all(phrase_tokens %in% text_tokens)
+}
+
+grep_custom <- function(pattern, vector){
+  lapply(vector,
+        contains_all_tokens,
+        pattern) |> unlist()
+}
+
+irr_names <- c("Pivot I", 
+               "Pivot II", 
+               "Hose Reel + Boom Cart", 
+               "Hose Reel + Sprinkler")
+market_ylds <- c("low", "high")
+
+combos <- expand.grid(
+  irrigation = irr_names,
+  market_yield = market_ylds,
+  stringsAsFactors = FALSE
+)
+
+
+
+plot_list <- list()
+for (i in 1:nrow(combos)){
+  plot_list[[paste(combos[i,1],combos[i,2], sep = ", ")]] <- annual.net.benefit.plot(annual_net_benefit, combos[i,1], combos[i,2]) 
+}
+
+
+
+
+
+
+# #make costs vs gain plots
+# 
+# irrigation_types <- names(irrigation.costs())
+# soil_types <- c("CTW","ARY","CLO")
+# stations <- unique(cost_benefit$station)
+# rotations <- 1:3
+# market_yields <- c("low", "high")
+# period <- unique(cost_benefit$period)
+# 
+# combos <- expand.grid(
+#   irrigation = irrigation_types,
+#   station = stations,
+#   soil = soil_types,
+#   rotation = rotations,
+#   market_yield = market_yields,
+#   period = period,
+#   stringsAsFactors = FALSE
+# )
+# 
+# make.individual.plots <- function(data, combo_df){
+#   
+#   for(i in 1:nrow(combo_df)){
+#     r <- combo_df[i,]
+# 
+#     path <- file.path(outdir, r["period"], r["irrigation"], r["soil"])
+#     fname <- paste(r["station"], r["market_yield"],r["rotation"],
+#                    ".png", sep = "_")
+#     message(sprintf("Creating: %s\n in %s", fname, path))
+#     
+#     make.dir(path)
+#     
+#     sub_df <- data |> filter(period == r[["period"]],
+#                            station == r[["station"]],
+#                            soil == r[["soil"]])
+#     
+#     plot <- cost.v.gains(sub_df, r[["rotation"]],
+#                          r[["market_yield"]],
+#                          r[["irrigation"]],
+#                          r[["station"]],
+#                          r[["soil"]])
+#     
+#     ggsave(fname, plot, path = path, width = 15, height = 10, units = "cm")
+#     
+#     message("✅Plot created and saved successfully")
+#   }
+# }
+# 
+# make.dir <- function(filepath){
+#   if(!dir.exists(filepath)) make.dir(sub("/[^/]*$", "", filepath))
+#   dir.create(filepath)
+# }
+
+# data <- cost_benefit |> filter(period == "GS", stn_code == "S", soil == "CTW")
+# 
+# make.box.plot(gs_data, overall_hist_gs,"precip", 10, "Growing Season")
+# make.box.plot(julaug_data, overall_hist_julaug,"precip", 5, "July to August") 
+# 
+# make.box.plot.station(gs_data, overall_hist_gs, 10,
+#                       "Growing Season", "Summerside")
+# 
+# make.box.plot.soil(gs_data, overall_hist_gs, 10,
+#                       "Growing Season", "CTW")
+# make.box.plot.soil(gs_data, overall_hist_gs, 10,
+#                    "Growing Season", "ARY")
+# make.box.plot.soil(gs_data, overall_hist_gs, 10,
+#                    "Growing Season", "CLO")
+# 
+# make.cwr.plot(gs_data)
+# 
+# make.individual.plots(cost_benefit, combos)
+
+
+
+
+# outdir <- "~/Research/Project - Irrigation Assessment/Figures - 20250709_CORRECTED"
+# dir.create(outdir)
+# 
+# combos <- expand.grid(
+#   stations = unique(gs_cost_benefit$stn_code),
+#   soils = unique(gs_cost_benefit$soil),
+#   stringsAsFactors = FALSE)
+# 
+# combos_rot <- expand.grid(
+#   stations = unique(gs_cost_benefit$stn_code),
+#   soils = unique(gs_cost_benefit$soil),
+#   rotation = 1:3,
+#   stringsAsFactors = FALSE)
+# 
+# for(i in 1:nrow(combos)){
+#   cost.gains.all.years(gs_cost_benefit, combos[i,1], combos[i,2])
+# }
+# 
+# for(i in 1:nrow(combos_rot)){
+#   cost.v.gains(gs_cost_benefit,
+#                combos_rot[i,3],
+#                combos_rot[i,1],
+#                combos_rot[i,2])
+# }
+

@@ -11,6 +11,10 @@ market_yield_high <- 0.90
 
 market_price <- 400.92 # $CAD/t.
 
+rotation_2001 <- seq(2001,2024, by  = 3)
+rotation_2002 <- seq(2002,2024, by  = 3)
+rotation_2003 <- seq(2003,2024, by  = 3)
+
 irrigation.costs <- function(){
 pivotI <- list(
   type = "pivot I",
@@ -65,8 +69,183 @@ sum.total <- function(values){
 }
   
 
-calc.yearly.earnings <- function(mrkt_yld){
+calc.earnings <- function(mrkt_yld){
   return(mrkt_yld * market_price) 
+}
+
+calc.sic <- function(data, irr_system){
+  OWS <- data$cetm #Optimal Water Supply - Max Cumulative ET
+  precip <- data$precip_e #Cumulative effective precipitation
+  UWC <- irr_system$operation #operational cost based on application of 152 mm
+  AOC <- irr_system$ownership #ownership cost
+  
+  message(sprintf("💰 %s-%s %s Yearly Costs (Not including Capital Costs)",
+                  unique(data$stn_code), unique(data$soil), irr_system$type))
+  mapply(sic.eqn,
+         OWS, precip, UWC, AOC)
+}
+
+sic.eqn <- function(OWS = 1, x = 1, UWC = 1, AOC = 1){
+#Jiang et al., 2022 - Equation (1)
+
+  if(x < OWS){
+    SIC <- ((OWS - x) / 152) * UWC + AOC
+    message(sprintf("SIC = ((%f.2 - %f.2)/ 152) * %f.2 + %f.2\n    = %f.2", OWS, x, UWC, AOC, SIC))
+  } else {
+    SIC <- AOC
+    message(sprintf("SIC = %f.2", SIC))
+  }
+  SIC
+}
+
+total.costs <- function(data, p){
+  
+  irrigation_systems <- irrigation.costs()
+  
+  lapply(data, function(d){
+    d <- d |> filter(period == p)
+    
+    r1 <- d |> filter(ian %in% rotation_2001)
+    r2 <- d |> filter(ian %in% rotation_2002)
+    r3 <- d |> filter(ian %in% rotation_2003)
+    
+    lapply(irrigation_systems, function(irr){
+      r1costs <- irr$total.asset + sum(r1[, names(r1) == irr$type]) +
+        sum(!(d$ian %in% rotation_2001))*irr$ownership
+      r2costs <- irr$total.asset + sum(r2[, names(r2) == irr$type]) +
+        sum(!(d$ian %in% rotation_2002))*irr$ownership
+      r3costs <- irr$total.asset + sum(r3[, names(r3) == irr$type]) +
+        sum(!(d$ian %in% rotation_2003))*irr$ownership
+      
+      df <- data.frame(unique(r1$soil),
+                 unique(r1$stn_code),
+                 unique(r1$period),
+                 irr$type,
+                 r1costs,
+                 r2costs,
+                 r3costs)
+      names(df) <- c("soil", "stn_code", "period", "irrigation type",
+                     "rotation 1 costs", "rotation 2 costs", "rotation 3 costs")
+      df
+    })
+  })
+}
+
+total.gross.benefit <- function(data, p){
+  
+  lapply(data, function(d){
+    
+    d <- d |> filter(period == p)
+    
+    r1 <- d |> filter(ian %in% rotation_2001)
+    r2 <- d |> filter(ian %in% rotation_2002)
+    r3 <- d |> filter(ian %in% rotation_2003)
+    
+    r1grosslow <- sum(r1$`Gross Benefit, low`)
+    r1grosshigh <- sum(r1$`Gross Benefit, high`)
+    r2grosslow <- sum(r2$`Gross Benefit, low`)
+    r2grosshigh <- sum(r2$`Gross Benefit, high`)
+    r3grosslow <- sum(r3$`Gross Benefit, low`)
+    r3grosshigh <- sum(r3$`Gross Benefit, high`)
+    
+    df <- data.frame(unique(r1$soil),
+               unique(r1$stn_code),
+               unique(r1$period),
+               r1grosslow,
+               r1grosshigh,
+               r2grosslow,
+               r2grosshigh,
+               r3grosslow,
+               r3grosshigh)
+    names(df) <- c("soil", "stn_code", "period", "rotation 1,
+                   low mrkt gross", "rotation 1, high mrkt gross", "rotation 2,
+                   low mrkt gross", "rotation 2, high mrkt gross", "rotation 3,
+                   low mrkt gross", "rotation 3, high mrkt gross")
+    df
+  })
+}
+
+cum.costs <- function(df) {
+  irrigation_systems <- irrigation.costs()
+  
+  for (irr in irrigation_systems){
+    
+    col_name <- sprintf("costs.yearly, %s", irr$type)
+    df[col_name] <- df[, names(df) == irr$type]
+
+    cum_col_name <- sprintf("costs.cum, %s", irr$type)
+    df[cum_col_name] <- cumsum(df[col_name])
+    
+    for (i in 1:3) {
+      rot <- sprintf("rotation_200%d", i)
+      
+      yrly_col <- sprintf("rot%dcosts.yearly, %s", i, irr$type)
+      
+      df[df$ian %in% get(rot), yrly_col] <- df[(df$ian %in% get(rot)), names(df) == irr$type]
+      df[!(df$ian %in% get(rot)), yrly_col] <- irr$ownership
+      
+      if (i %in% 2:3) {
+        prevyrs <- 1:(which(df$ian == get(rot)[1]) - 1)
+        df[prevyrs, yrly_col] <- 0
+      }
+      
+      cum_col <- sprintf("rot%dcosts.cum, %s", i, irr$type)
+      df[cum_col] <- cumsum(df[yrly_col])
+    }
+  }
+  return(df)
+}
+
+cum.gross.benefit <- function(df) {
+  
+  col_low <- "gross.cum, low"
+  col_high <- "gross.cum, high"
+  
+  df[col_low] <- cumsum(df["Gross Benefit, low"])
+  df[col_high] <- cumsum(df["Gross Benefit, high"])
+  
+  
+  for (i in 1:3) {
+    rot <- sprintf("rotation_200%d", i)
+    
+    yrly_col_low <- sprintf("rot%dgross.yearly, low", i)
+    yrly_col_high <- sprintf("rot%dgross.yearly, high", i)
+      
+    df[df$ian %in% get(rot), yrly_col_low] <- df[(df$ian %in% get(rot)), "Gross Benefit, low"]
+    df[df$ian %in% get(rot), yrly_col_high] <- df[(df$ian %in% get(rot)), "Gross Benefit, high"]
+    df[!(df$ian %in% get(rot)), yrly_col_low] <- 0
+    df[!(df$ian %in% get(rot)), yrly_col_high] <- 0
+    
+    if (i %in% 2:3) {
+      prevyrs <- 1:(which(df$ian == get(rot)[1]) - 1)
+      df[prevyrs, yrly_col_low] <- 0
+      df[prevyrs, yrly_col_high] <- 0
+    }
+    
+    cum_col_low <- sprintf("rot%dgross.cum, low", i)
+    df[cum_col_low] <- cumsum(df[yrly_col_low])
+    
+    cum_col_high <- sprintf("rot%dgross.cum, high", i)
+    df[cum_col_high] <- cumsum(df[yrly_col_high])
+    
+  }
+  return(df)
+}
+
+get.cost.benefit <- function(data){
+  
+  cum_costs <- cum.costs(data)
+  cum_gross_benefit <- cum.gross.benefit(data)
+  
+  df <- cum_costs |> left_join(cum_gross_benefit,
+                  by = c("ian", "stn_code", "soil"),
+                  suffix = c("", ".y")) |>
+    select(-ends_with(".y"))
+  
+}
+
+annual.net.benefit <- function(total_costs, total_gross, span){
+  net_benefit <- (total_costs - total_gross)/span
 }
 
 

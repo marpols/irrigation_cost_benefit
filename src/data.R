@@ -6,6 +6,9 @@ organise.data <- function(sim_list, group_by = NULL, fname){
   writedir <- file.path(outdir, names(sim_list)[[1]])
   if (!dir.exists(writedir)) dir.create(writedir)
   
+  simRDS <- sprintf("data/%s_sims.RDS", names(sim_list)[[1]])
+  if (!file.exists(simRDS)) saveRDS(sim_list, simRDS)
+  
   monthly <- readRDS("data/monthly.RDS")
   yearly <- readRDS("data/yearly.RDS")
   historical <- readRDS("data/historical_avgs.RDS")
@@ -13,7 +16,9 @@ organise.data <- function(sim_list, group_by = NULL, fname){
   
   yield_summary <- summarise.yield.data(sim_list, group_by, writedir) |>
     add.climate(clim = yearly) |>
-    add.CWR(sims = sim_list)
+    add.CWR(sims = sim_list) |>
+    calculate.costs() |>
+    calculate.gross.benefit()
   
   cols_to_front <- c("ian", "soil", "stn_code", "period")
   yield_summary <- lapply(yield_summary, function(y){
@@ -22,6 +27,9 @@ organise.data <- function(sim_list, group_by = NULL, fname){
                       cols_to_front))]
   })
   
+  saveRDS(yield_summary, sprintf("data/%s_%s_summary.RDS", 
+                                 str_extract(writedir, "\\w*$"),
+                                 fname))
   save.to.xl(yield_summary, writedir, fname)
   
   aggregated <- do.call(rbind, yield_summary)
@@ -161,15 +169,68 @@ add.CWR <- function(yields, sims){
   })
 }
 
-calculate.costs <- function(yields){
-  lapply(yields, function(y){
-    y$`Low market yield, $` <- calc.yearly.earnings(y$`Low market yield, stress`)
-    y$`Low market yield, $ gain` <- calc.yearly.earnings(y$`Low market yield, stress`)
-    y$`Low market yield, gross benefit` <- y$`Low market yield, $ gain` - y$`Low market yield, $`
-    y$`High market yield, $` <- calc.yearly.earnings(y$`High market yield, stress`)
-    y$`High market yield, $ gain` <- calc.yearly.earnings(y$`High market yield, stress`)
-    y$`High market yield, gross benefit` <- y$`High market yield, $ gain` - y$`High market yield, $`
-    
-    
+calculate.costs <- function(data){
+  
+  irrigation_systems <- irrigation.costs()
+  
+  costs <- lapply(data,
+                  function(x) lapply(irrigation_systems,
+                                           calc.sic, data = x)) |>
+    lapply(function(c){as.data.frame(do.call(cbind, c))})
+  
+  mapply(function(d,c){
+    cbind(d,c)
+  }, data, costs, SIMPLIFY = F)
+}
+
+calculate.gross.benefit <- function(data){
+  lapply(data, function(d){
+    d$irrigated <- d$precip_e < d$cetm
+    d$"Gross Benefit, low" <- calc.earnings(d$Gains.market.low)
+    d$"Gross Benefit, high" <- calc.earnings(d$Gains.market.high) 
+    d[d$irrigated == F, "Gross Benefit, low"] <- 0
+    d[d$irrigated == F, "Gross Benefit, high"] <- 0
+    d
   })
+}
+
+cost.benefit.data <- function(data, fname = ""){
+  #caluculate cummulative gross benefit per rotation
+  gs_gross_benefit <- lapply(data, function(df){
+    df <- df |> filter(period == "GS")
+    get.cost.benefit(df)
+  })
+  
+  julaug_gross_benefit <- lapply(data, function(df){
+    df <- df |> filter(period == "julaug")
+    get.cost.benefit(df)
+  })
+  
+  writedir <- file.path(outdir, fname)
+  if (!dir.exists(writedir)) dir.create(writedir)
+  
+  save.to.xl(gs_gross_benefit, writedir, "gs")
+  save.to.xl(julaug_gross_benefit, writedir, "julaug")
+  
+  saveRDS(gs_gross_benefit, "data/gs_gross_benefit.RDS")
+  saveRDS(julaug_gross_benefit, "data/julaug_gross_benefit.RDS")
+  
+  gs_aggregated <- do.call(rbind, gs_gross_benefit)
+  julaug_aggregated <- do.call(rbind, julaug_gross_benefit)
+  
+  all_aggregated <- rbind(gs_aggregated, julaug_aggregated)
+  
+  
+  write.table(all_aggregated,
+              file = file.path(writedir,
+                               sprintf("%s_%s_all.csv", 
+                                       str_extract(writedir, "\\w*$"),
+                                       fname)), 
+              row.names = F, sep = ",")
+  
+  saveRDS(all_aggregated, sprintf("data/%s_%s_all.RDS", 
+                              str_extract(writedir, "\\w*$"),
+                              fname))
+  
+  
 }
