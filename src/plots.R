@@ -39,15 +39,60 @@ make.climate.plots <- function(usm){
   julaug_temp_plot
 }
 
-make.plots <- function(sims_s,sims_ns, climfile){
-  yields <- yields.stress.nostress(sims_s,sims_ns)
+make.plots <- function(sims_s, sims_ns, climfile) {
+  yields <- yields.stress.nostress(sims_s, sims_ns)
   # monthly_summary <-
-  # gs_summary <- 
-  # julaug_summary <- 
-  # cwr_deficits <- 
+  # gs_summary <-
+  # julaug_summary <-
+  # cwr_deficits <-
   # gs_hist_avg <-
   # julaug_hist_avg <-
 }
+
+#climate plots
+plot.mean.gs.climate <- function(dataset, variable, title, ylable, colour) {
+  data <- if("period" %in% names(dataset)) 
+    dataset |> filter(period == "GS") else dataset |> filter(mo %in% 6:9)
+  data$stn_code <- lapply(data$station, get.stn.code) |> unlist()
+  
+  data$stn_code  <- factor(data$stn_code, 
+                           levels = c("S", "NG", "HCC", "EP"))
+  
+  climplot <- ggplot(data, aes(x = stn_code, y = .data[[variable]])) +
+    geom_boxplot(fill = colour) +
+    labs(
+      title = title,
+      x = "weather station",
+      y = ylable
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 18),
+      axis.title.x = element_text(size = 16),
+      axis.title.y = element_text(size = 16),
+      axis.text = element_text(size = 16)
+    )
+  
+  ggsave(sprintf("%s.png", variable), 
+         plot = climplot,
+         path = outdir,
+         width = 17,
+         height = 9.5,
+         units = "cm")
+  
+  climplot
+}
+
+
+
+ggsave(
+  sprintf("total_yield_gain_%s.png", mrkt_yld),
+  plot = plot,
+  path = outdir,
+  width = 20,
+  height = 15,
+  units = "cm"
+)
 
 #historical climate
 plot.climate <- function(data, hist_data, variable, station, 
@@ -241,12 +286,48 @@ make.cwr.plot <- function(data, hist, div,
     scale_fill_gradient2(low = "#FF0000", mid = "#FFD000", high = "#00B1F7",
                          midpoint = mid)  +
     scale_y_continuous(breaks = seq(-100, 150, by  = 50)) +
-    labs(title = sprintf("Crop Water Deficit - %s", group),
+    labs(title = sprintf("Crop Water Deficit/Surplus - %s", group),
          subtitle = sprintf("%s", span), 
          y = "Water deficit (mm)",
          x = "Year",
          fill = "Deficit (mm)") +
     theme_minimal()
+  cwr.plot
+  
+}
+
+make.mean.cwr.plot <- function(data, year){
+  
+  data$CWR <- data$CWR * -1
+  
+  
+  data_summary <- data |>
+    group_by(stn_code, soil, ian) |>
+    summarise(
+      mean_cwr = mean(CWR, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  data_summary <- data_summary |> filter(ian == year)
+  
+  data_summary$stn_code <- factor(data_summary$stn_code, 
+                             levels = c("S", "NG", "HCC", "EP"))
+  
+  min <- min(data_summary$mean_cwr)
+  mid <- mean(data_summary$mean_cwr)
+  max <- max(data_summary$mean_cwr)
+  
+  cwr.plot <- ggplot(data_summary, aes(x = stn_code, y = mean_cwr, fill = mean_cwr)) +
+    geom_col(position = "dodge") +
+    scale_fill_gradient2(low = "#FF0000", mid = "#FFD000", high = "#00B1F7",
+                         midpoint = mid)  +
+    scale_y_continuous(breaks = seq(-100, 150, by  = 50)) +
+    labs(title = sprintf("Crop Water Deficit/Surplus - %d", year),, 
+         y = "mm",
+         x = "Weather Station",
+         fill = "Deficit (mm)") +
+    theme_minimal() +
+    facet_grid(cols = vars(soil))
   cwr.plot
   
 }
@@ -378,6 +459,51 @@ cost.gains.all.years <- function(dataset, stn, soil_name){
          units = "cm")
 }
 
+
+yield.gain.plot <- function(dataset){
+  #dataset = gs_data
+  
+  data_summary <- dataset |> group_by(stn_code, soil) |>
+    reframe(total.gain = sum(Gains.total))
+  
+  data_summary$stn_code  <- factor(data_summary$stn_code, 
+                         levels = c("S", "NG", "HCC", "EP"))
+  
+  plot <- ggplot(data_summary) +
+    geom_col(aes(x = stn_code, y = total.gain, fill = soil),
+             position = "dodge") +
+    scale_fill_manual(values = c(
+      "ARY" = "#33A02C",
+      "CTW" = "#CAB2D6",
+      "CLO" = "#FDBF6F")) +
+    scale_y_continuous(breaks = 
+                         seq(0,200, by = 50),
+                       sec.axis = 
+                         sec_axis(~.* 8.92, name =
+                                    expression("Cwt" %.%"ac."^{-1}))) +
+    coord_cartesian(ylim = c(0,200)) +
+    labs(title = "Total Yield Gain 2001 - 2024",
+         x = "weather station",
+         y = expression(t %.% ha.^-1),
+         fill = "Soil") +
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          plot.title = element_text(size = 20),
+          axis.title.x = element_text(size = 16),
+          axis.title.y = element_text(size = 16),
+          axis.text = element_text(size = 18),
+          legend.text = element_text(size = 18),
+          legend.title = element_text(size = 18))
+  plot
+  
+  ggsave("total_yield_gains.png", 
+         plot = plot,
+         path = outdir,
+         width = 20,
+         height = 15,
+         units = "cm")
+}
+
 marketable.yield.gain.plot <- function(dataset, mrkt_yld){
   
   col <- grep(mrkt_yld, names(gain_by_soilstn), value = T)
@@ -399,7 +525,10 @@ marketable.yield.gain.plot <- function(dataset, mrkt_yld){
          y = "t/ha.",
          fill = "Soil") +
     theme_minimal() +
-    theme(legend.position = "bottom")
+    theme(legend.position = "bottom",
+          plot.title = element_text(size = 18),
+          axis.title.x = element_text(size = 16),
+          axis.title.y = element_text(size = 16))
   plot
   
   ggsave(sprintf("total_yield_gain_%s.png", mrkt_yld), 
@@ -444,6 +573,47 @@ annual.net.benefit.plot <- function(dataset, irr_name, mrkt_yld){
 
 }
 
+payback.period.plot <- function(dataset, mrkt_yld){
+  
+  dataset <- dataset |> filter(market_yield == mrkt_yld)
+  dataset$stn_code <- factor(dataset$stn_code, 
+                             levels = c("S", "NG", "HCC", "EP"))
+  dataset$irrigation_type <- factor(dataset$irrigation_type,
+                                    levels = c("pivot I",
+                                               "pivot II",
+                                               "hose reel + sprinkler",
+                                               "hose reel + boom cart"))
+  
+  plot <- ggplot(dataset, aes(x = stn_code, fill = soil)) +
+    geom_col(aes(y = payback_period),
+             position = "dodge") +
+    geom_hline(yintercept = 24,
+               linewidth = 0.5,
+               colour = "red") +
+    scale_fill_manual(values = c(
+      "ARY" = "#33A02C",
+      "CTW" = "#CAB2D6",
+      "CLO" = "#FDBF6F")) +
+    coord_cartesian(ylim = c(0, 100)) +
+    labs(title = "Payback Period",
+         subtitle = sprintf("Marketable Yield %s of Total Yield",
+                            if(mrkt_yld == "low") "70%" else "90%"),
+         y = "Years",
+         x = "weather station",
+         fill = "Soil") +
+    theme_minimal() +
+    theme(legend.position = "bottom") +
+    facet_grid(cols = vars(irrigation_type))
+  
+  ggsave(sprintf("payback_period_%s.png", mrkt_yld), 
+         plot = plot,
+         path = outdir,
+         width = 20,
+         height = 15,
+         units = "cm")
+  
+}
+
 tokenize <- function(x) {
   x |>
     str_replace_all("([a-z])([A-Z])", "\\1 \\2") |>  # camelCase split
@@ -465,17 +635,199 @@ grep_custom <- function(pattern, vector){
         pattern) |> unlist()
 }
 
-irr_names <- c("Pivot I", 
-               "Pivot II", 
-               "Hose Reel + Boom Cart", 
-               "Hose Reel + Sprinkler")
-market_ylds <- c("low", "high")
+wb.plot1 <- function(dataset){
+  #make wb plot for growing season - df = wb_summary
+  data <- dataset |> filter(mo == "GS") 
+  data$stn_code <- lapply(data$station, get.stn.code) |> unlist()
+  
+  data$stn_code  <- factor(data$stn_code, 
+                             levels = c("S", "NG", "HCC", "EP"))
 
-combos <- expand.grid(
-  irrigation = irr_names,
-  market_yield = market_ylds,
-  stringsAsFactors = FALSE
-)
+  #average
+  mean_wb <- data |> 
+    group_by(stn_code, soil) |>
+    summarise(mean_gs_wb  = mean(WB, na.rm = T))
+  
+  mean_wb$stn_code <- factor(mean_wb$stn_code, 
+                             levels = c("S", "NG", "HCC", "EP"))
+  
+  mean_plot <- ggplot(mean_wb, aes(x = stn_code, y = mean_gs_wb, fill = soil)) +
+    geom_col(position = "dodge") +
+    theme_minimal()+
+    scale_fill_manual(values = c(
+      "ARY" = "#33A02C",
+      "CTW" = "#CAB2D6",
+      "CLO" = "#FDBF6F")) +
+    labs(title = "Mean Growing Season Water Balance 2001 - 2024",
+         x = "weather station",
+         y = "mm",
+         fill = "Soil") +
+    theme(legend.position = "bottom",
+          plot.title = element_text(size = 18),
+          axis.title.x = element_text(size = 16),
+          axis.title.y = element_text(size = 16),
+          axis.text = element_text(size = 16)) +
+    coord_cartesian(ylim = c(0,100))
+  mean_plot
+  
+  ggsave("gs_mean_wb.png", 
+         plot =  mean_plot,
+         path = outdir,
+         width = 17,
+         height = 11.5,
+         units = "cm")
+}
+
+wb.plot2 <- function(dataset){
+  #make monthly wb plot - df = wb_summary
+  data <- dataset |> filter(!(mo == "GS"), year %in% c(2001, 2020))
+  data$stn_code <- lapply(data$station, get.stn.code) |> unlist()
+  
+  data$stn_code  <- factor(data$stn_code, 
+                           levels = c("S", "NG", "HCC", "EP"))
+  
+  #average
+  mean_wb <- data |> 
+    group_by(stn_code, soil) |>
+    summarise(mean_gs_wb  = mean(WB, na.rm = T))
+  
+  mean_wb$stn_code <- factor(mean_wb$stn_code, 
+                             levels = c("S", "NG", "HCC", "EP"))
+  
+  mean_plot <- ggplot(mean_wb, aes(x = stn_code, y = mean_gs_wb, fill = soil)) +
+    geom_col(position = "dodge") +
+    theme_minimal()+
+    scale_fill_manual(values = c(
+      "ARY" = "#33A02C",
+      "CTW" = "#CAB2D6",
+      "CLO" = "#FDBF6F")) +
+    labs(title = "Mean Growing Season Water Balance 2001 and 2020",
+         x = "weather station",
+         y = "mm",
+         fill = "Soil") +
+    theme(legend.position = "bottom",
+          plot.title = element_text(size = 18),
+          axis.title.x = element_text(size = 16),
+          axis.title.y = element_text(size = 16),
+          axis.text = element_text(size = 16)) +
+    coord_cartesian(ylim = c(0,100))
+  mean_plot
+  
+  ggsave("gs_mean_wb_drought.png", 
+         plot =  mean_plot,
+         path = outdir,
+         width = 17,
+         height = 11.5,
+         units = "cm")
+}
+
+wb.plot3 <- function(dataset){
+  #drought year water balance
+  data <- dataset |> filter(!(mo == "GS"), year == "2001")
+  data$stn_code <- lapply(data$station, get.stn.code) |> unlist()
+  
+  data$stn_code  <- factor(data$stn_code, 
+                           levels = c("S", "NG", "HCC", "EP"))
+  
+  ggplot(data, aes(x = mo, y = WB, fill = soil)) +
+    geom_col(position = "dodge") +
+    theme_minimal() +
+    facet_grid(cols = vars(stn_code))
+  
+  
+}
+
+wb.plot4 <- function(){
+  #make divided water balance plot - df = wb_summary
+}
+
+raw.plot <- function(dataset){
+  #readily available water <- df = RAW
+  data <- dataset |> filter(mo %in% 6:9)
+  
+  data$stn_code  <- factor(data$stn_code, 
+                           levels = c("S", "NG", "HCC", "EP"))
+  
+  data_summary <- data |> group_by(soil, stn_code, mo) |>
+    reframe(mean_raw_gs = mean(RAW))
+  
+  mean <- ggplot(data_summary, aes(x = mo, y = mean_raw_gs, fill = soil)) +
+    geom_col(position = "dodge") +
+    coord_cartesian(ylim = c(0, 50)) +
+    scale_fill_manual(values = c(
+      "ARY" = "#33A02C",
+      "CTW" = "#CAB2D6",
+      "CLO" = "#FDBF6F")) +
+    labs(title = "Mean Readily Available Water",
+         subtitle = "2001 - 2024",
+         x = "MOY",
+         y = "mm",
+         fill = "Soil") +
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          plot.title = element_text(size = 18),
+          axis.title.x = element_text(size = 16),
+          axis.title.y = element_text(size = 16),
+          axis.text = element_text(size = 16),
+          strip.text = element_text(size = 16)
+    ) +
+    facet_grid(cols = vars(stn_code))
+  
+  data2 <- data |> filter(year %in% c(2001, 2020))
+  
+  data_summary2 <- data2 |> group_by(soil, stn_code, mo) |>
+    reframe(mean_raw_gs = mean(RAW))
+  
+  drought_mean <- ggplot(data_summary2, aes(x = mo, y = mean_raw_gs, fill = soil)) +
+    geom_col(position = "dodge") +
+    coord_cartesian(ylim = c(0, 50)) +
+    scale_fill_manual(values = c(
+      "ARY" = "#33A02C",
+      "CTW" = "#CAB2D6",
+      "CLO" = "#FDBF6F")) +
+    labs(title = "Mean Readily Available Water",
+         subtitle = "2001 and 2020",
+         x = "MOY",
+         y = "mm",
+         fill = "Soil") +
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          plot.title = element_text(size = 18),
+          axis.title.x = element_text(size = 16),
+          axis.title.y = element_text(size = 16),
+          axis.text = element_text(size = 16),
+          strip.text = element_text(size = 16)) +
+    facet_grid(cols = vars(stn_code))
+  
+  ggsave("mean_raw.png", 
+         plot = mean,
+         path = outdir,
+         width = 17,
+         height = 11.5,
+         units = "cm")
+  
+  ggsave("mean_raw_drought.png", 
+         plot = drought_mean,
+         path = outdir,
+         width = 17,
+         height = 11.5,
+         units = "cm")
+  mean
+  drought_mean
+           
+}
+
+# irr_names <- c("Pivot I", 
+#                "Pivot II", 
+#                "Hose Reel + Boom Cart", 
+#                "Hose Reel + Sprinkler")
+# market_ylds <- c("low", "high")
+# 
+# combos <- expand.grid(
+#   irrigation = irr_names,
+#   market_yield = market_ylds,
+#   stringsAsFactors = FALSE
+# )
 
 
 
@@ -566,10 +918,10 @@ combos <- expand.grid(
 # outdir <- "~/Research/Project - Irrigation Assessment/Figures - 20250709_CORRECTED"
 # dir.create(outdir)
 # 
-combos <- expand.grid(
-  stations = unique(gs_cost_benefit$stn_code),
-  soils = unique(gs_cost_benefit$soil),
-  stringsAsFactors = FALSE)
+# combos <- expand.grid(
+#   stations = unique(gs_cost_benefit$stn_code),
+#   soils = unique(gs_cost_benefit$soil),
+#   stringsAsFactors = FALSE)
 # 
 # combos_rot <- expand.grid(
 #   stations = unique(gs_cost_benefit$stn_code),
@@ -577,9 +929,9 @@ combos <- expand.grid(
 #   rotation = 1:3,
 #   stringsAsFactors = FALSE)
 # 
-for(i in 1:nrow(combos)){
-  cost.gains.all.years(gs_cost_benefit, combos[i,1], combos[i,2])
-}
+# for(i in 1:nrow(combos)){
+#   cost.gains.all.years(gs_cost_benefit, combos[i,1], combos[i,2])
+#}
 # 
 # for(i in 1:nrow(combos_rot)){
 #   cost.v.gains(gs_cost_benefit,
@@ -587,4 +939,84 @@ for(i in 1:nrow(combos)){
 #                combos_rot[i,1],
 #                combos_rot[i,2])
 # }
+
+plot.monthly <- function(dataset){
+  data <- dataset |> filter(mo %in% c(6:9))
+  data$stn_code <- lapply(data$station, get.stn.code) |> unlist()
+  
+  data$stn_code  <- factor(data$stn_code, 
+                           levels = c("S", "NG", "HCC", "EP"))
+  
+  data_summary <- data |> group_by(mo, stn_code) |>
+    reframe(mean_precip = mean(precip.cum))
+  
+  mid <- mean(data_summary$mean_precip)
+  
+  plot <- ggplot(data_summary, aes(x = mo,
+                           y = mean_precip,
+                           fill = mean_precip)) +
+    geom_col() +
+    scale_fill_gradient2(low = "#ED5353",
+                        mid = "#3DC8FF",
+                        high = "#0E3F99",
+                        midpoint = mid) + 
+    theme_minimal() +
+    labs(title = "Mean Monthly Precipitation",
+         x = "MOY",
+         y = "mm") +
+    guides(fill = "none") +
+    theme(legend.position = "bottom",
+          plot.title = element_text(size = 18),
+          axis.title.x = element_text(size = 16),
+          axis.title.y = element_text(size = 16),
+          axis.text = element_text(size = 16),
+          strip.text = element_text(size = 16)) +
+    facet_grid(cols = vars(stn_code))
+  
+  data2 <- data |> filter(ian %in% c(2001, 2020))
+  
+  data_summary2 <- data2 |> group_by(mo, stn_code) |>
+    reframe(mean_precip = mean(precip.cum))
+  
+  plot2 <- ggplot(data_summary2, aes(x = mo,
+                                   y = mean_precip,
+                                   fill = mean_precip)) +
+    geom_col() +
+    scale_fill_gradient2(low = "#ED5353",
+                         mid = "#3DC8FF",
+                         high = "#0E3F99",
+                         midpoint = mid) +
+    coord_cartesian(ylim = c(0,120)) +
+    theme_minimal() +
+    labs(title = "Mean Monthly Precipitation Drought Years",
+         x = "MOY",
+         y = "mm") +
+    guides(fill = "none") +
+    theme(legend.position = "bottom",
+          plot.title = element_text(size = 18),
+          axis.title.x = element_text(size = 16),
+          axis.title.y = element_text(size = 16),
+          axis.text = element_text(size = 16),
+          strip.text = element_text(size = 16)) +
+    facet_grid(cols = vars(stn_code))
+  
+  ggsave("montly_precip.png", 
+         plot = plot,
+         path = outdir,
+         width = 17,
+         height = 11.5,
+         units = "cm")
+  
+  ggsave("monthly_precip_drought.png", 
+         plot = plot2,
+         path = outdir,
+         width = 17,
+         height = 11.5,
+         units = "cm")
+  
+}
+
+plot.yearly.precip <- function(dataset){
+  
+}
 

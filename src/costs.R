@@ -196,5 +196,25 @@ annual.net.benefit <- function(total_costs, total_gross, span){
   net_benefit <- (total_costs - total_gross)/span
 }
 
+#for one-time capital cost only (no yearly ownership)
+payback.period <- function(irr_type, dataset, mrkt_yield, soil_name, stn){
+  
+  irrigation <- irrigation.costs()
+  irr <- irrigation[[match(sprintf("%s", irr_type),
+                           names(irrigation))]]  
+  
+  data <- dataset |> filter(soil == soil_name, stn_code == stn)
+  
+  initial_capital <- irr$total.asset
+  operating_costs <- data[[irr$type]]
+  annual_gross <- data[[sprintf("Gross Benefit, %s", mrkt_yield)]]
+  
+  annual_ncb <- sum(net.cash.benefit(annual_gross, operating_costs))
+  return(initial_capital / (annual_ncb / length(annual_gross)))
+}
+
+net.cash.benefit <- function(annual_gross, annual_operation){
+  annual_gross - annual_operation
+}
 
 

@@ -8,10 +8,21 @@ historical <- readRDS("data/historical_avgs.RDS")
 overall_hist_gs <- historical |> filter(period == "GS")
 overall_hist_julaug <- historical |> filter(period == "julaug")
 
+monthly <- readRDS("data/monthly.RDS")
+yearly <- readRDS("data/yearly.RDS")
+
 #processed simulation data with all costs and earnings calculated
 cost_benefit <- readRDS("data/Capital_Capital_all.RDS")
 gs_cost_benefit <- cost_benefit |> filter(period == "GS")
 julaug_cost_benefit <- cost_benefit |> filter(period == "julaug")
+
+#water balance
+wb_summary <- readRDS("data/waterbalance_all.RDS")
+w <- lapply(wb_summary[,5:10], as.numeric)
+wb_summary[,5:10] <- do.call(cbind, w)
+
+#RAW
+RAW <- get.RAW(hills_sims)
 
 #daily weather data for each station
 stn_hcc <- readRDS("data/HARRINGTON_CDA_CS_climatefile.RDS")
@@ -35,7 +46,7 @@ high_gain <- gain_by_soilstn[,1:3] |>
 low_gain <- gain_by_soilstn[,c(1,2,4)] |>
   pivot_wider(names_from = stn_code, values_from = total.yield.gain.low)
 
-
+#for ownership cost = yearly interest + yearly depreciation
 annual_net_benefit <- gs_cost_benefit |> group_by(soil, stn_code) |>
   summarise(pivotI = sum(`costs.yearly, pivot I`),
             pivotII = sum(`costs.yearly, pivot II`),
@@ -51,15 +62,50 @@ for (i in 3:6){
   annual_net_benefit[[paste(col,"high", sep = ".")]] <- (annual_net_benefit[[8]] - annual_net_benefit[[i]])/24
 }
 
-payback_period <- function(initial_capital, grossb, irr){
+
+
+irrigation_types <- names(irrigation.costs())
+soil_types <- c("CTW","ARY","CLO")
+stations <- unique(cost_benefit$stn_code)
+market_yields <- c("low", "high")
+
+combos <- expand.grid(
+  irrigation = irrigation_types,
+  station = stations,
+  soil = soil_types,
+  market_yield = market_yields,
+  stringsAsFactors = FALSE
+)
+
+payback_list <- list()
+for(i in 1:nrow(combos)){
+  pbp <- payback.period(combos[i,1],
+                        gs_cost_benefit,
+                        combos[i,4],
+                        combos[i,3],
+                        combos[i,2])
   
-  annual_ncb <- net_cash_benefit()
-  return(initial_capital/annual_ncb)
+  payback_list[[i]] <- list(
+                             stn_code = combos[i, 2],
+                             soil = combos[i, 3],
+                             market_yield = combos[i, 4],
+                             irrigation_type = combos[i, 1], 
+                             payback_period = pbp
+                           )
 }
 
-net_cash_benefit <- function(annual_gross, operating_costs){
-  annual_gross - annual_operation
-}
+payback_periods <- do.call(rbind, lapply(payback_list, as.data.frame))
 
+write.table(payback_periods, file.path(outdir, "payback_periods.csv"))
 
+x <- do.call(rbind, lapply(hills_sims, as.data.frame))
 
+y <- mapply(function(df, name){
+  col_names <- names(df)
+  as.data.frame(df)
+  
+  chars <- str_split(name, "_")
+  df$stn_code <- chars[1]
+  df$soil <- chars[1]
+  df
+}, hills_sims, names(hills_sims[[1]]))

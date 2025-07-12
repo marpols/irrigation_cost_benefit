@@ -83,6 +83,18 @@ get.stn.code <- function(station){
     paste(collapse = "")
 }
 
+get.stn <- function(stn_code){
+  if(stn_code == "S"){
+    return("SUMMERSIDE")
+  } else if(stn_code == "HCC"){
+    return("HARRINGTON_CDA_CS")
+  } else if(stn_code == "EP"){
+    return("EAST_POINT_(AUT)")
+  } else if(stn_code == "NG"){
+    return("NEW_GLASGOW")
+  }
+}
+
 save.to.xl <- function(list, outdir, fname){
   #list = list of data.frames
   fname <- paste0(str_extract(outdir, "\\w*$"), "_", fname, ".xlsx")
