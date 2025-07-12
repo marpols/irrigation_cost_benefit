@@ -9,7 +9,13 @@ overall_hist_gs <- historical |> filter(period == "GS")
 overall_hist_julaug <- historical |> filter(period == "julaug")
 
 monthly <- readRDS("data/monthly.RDS")
+monthly$mo <- as.numeric(monthly$mo)
+m <- lapply(monthly[,5:10], as.numeric)
+monthly[,5:10] <- do.call(cbind, w)
+
 yearly <- readRDS("data/yearly.RDS")
+w <- lapply(wb_summary[,5:10], as.numeric)
+wb_summary[,5:10] <- do.call(cbind, w)
 
 #processed simulation data with all costs and earnings calculated
 cost_benefit <- readRDS("data/Capital_Capital_all.RDS")
@@ -97,6 +103,19 @@ for(i in 1:nrow(combos)){
 payback_periods <- do.call(rbind, lapply(payback_list, as.data.frame))
 
 write.table(payback_periods, file.path(outdir, "payback_periods.csv"))
+
+payback_soil <- payback_periods |> group_by(soil, market_yield) |>
+  reframe(mean_payback = mean(payback_period))
+  
+payback_station <- payback_periods |> group_by(stn_code, market_yield) |>
+  reframe(mean_payback = mean(payback_period))
+  
+payback_irr <- payback_periods |> group_by(irrigation_type, market_yield) |>
+  reframe(mean_payback = mean(payback_period))
+
+
+grep(min(payback_periods$payback_period), payback_periods)
+
 
 x <- do.call(rbind, lapply(hills_sims, as.data.frame))
 

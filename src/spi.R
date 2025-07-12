@@ -1,7 +1,7 @@
-calculate.spi <- function(df, period = 1, season){
+calculate.spi <- function(df, period = 1, station){
   #period -> number of months to aggregate in the calculation
   
-  df <- df[df$mo %in% season, ]
+  df <- df[df$station %in% station, ]
   
   df_wide <- df[, c(2, 3, 4, 10)] |>
     mutate(day_label = paste0("d", jo)) |>
@@ -12,6 +12,8 @@ calculate.spi <- function(df, period = 1, season){
   
   spi_agr <- spi |>  group_by(year) |>
     summarise(spi = mean(spi, na.rm = TRUE, ))
+  
+  spi_agr
 }
 
 # Calculating OWS (optimum water supply)

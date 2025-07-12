@@ -103,3 +103,5 @@ WB_june
 WB_july
 WB_aug
 WB_sept
+
+x <- hills_sims[[1]]

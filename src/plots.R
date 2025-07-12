@@ -1016,7 +1016,44 @@ plot.monthly <- function(dataset){
   
 }
 
-plot.yearly.precip <- function(dataset){
+plot.yearly.precip <- function(dataset, stn){
   
+  dataset$stn_code <- lapply(dataset$station, get.stn.code) |> unlist()
+  
+  # data$stn_code  <- factor(data$stn_code, 
+  #                          levels = c("S", "NG", "HCC", "EP"))
+  
+  data <- dataset |> filter(stn_code == stn, period == "GS")
+  
+  hist_climate <- historical |> filter(period == "GS")
+  hist_climate$stn_code <- lapply(hist_climate$station, get.stn.code) |> unlist()
+  mid <- hist_climate |> filter(stn_code == stn)
+  mid <- mid$precip.cum
+  
+  p <- ggplot(data, aes(x <- ian, y = precip.cum, fill = precip.cum)) +
+    geom_col(position = "dodge") +
+    scale_x_continuous(breaks = seq(min(data$ian), max(data$ian), by = 1)) +
+    geom_hline(yintercept = mid) +
+    scale_fill_gradient2(low = "#ED5353",
+                         mid = "#3DC8FF",
+                         high = "#0E3F99",
+                         midpoint = mid) +
+    coord_cartesian(ylim = c(0,600)) +
+    labs(title = "Cumulative Yearly Growing Season Precipitation",
+         subtitle = unique(data$station),
+         x = year,
+         y = "mm", 
+         fill = "mm") +
+    theme_minimal()
+  
+  
+  ggsave(sprintf("cum_yearly_precip_%s.png", stn), 
+         plot = p,
+         path = outdir,
+         width = 30,
+         height = 15,
+         units = "cm")
 }
 
+overall_yearly <- hist_annual |> group_by(ian, period) |>
+  reframe(cum.precip = mean(precip.cum))
