@@ -1,7 +1,8 @@
 lapply(list.files("src", pattern = ".R", full.names = T), source)
 
 outdir <- rstudioapi::selectDirectory()
-outdir <- "~/Research/Project - Irrigation Assessment/Results - 20250706"
+outdir <- "~/Research/Project - Irrigation Assessment/Results - 20260108"
+if (!dir.exists(outdir)) dir.create(outdir)
 
 javastics_path <- "C:\\Users\\marpo\\Documents\\Research\\STICS\\JavaSTICS-1.5.3-STICS-10.3.0"
 workspace <- "irrigation_assessment"
@@ -21,10 +22,17 @@ hills2_sims <- get.mods.files("RESULTS", version = "hills2")
 hills3_sims <- get.mods.files("RESULTS", version = "hills3")
 hills4_sims <- get.mods.files("RESULTS", version = "hills4")
 
+nit_denit <- hills_sims$denit
+autoirr <- hills_sims$denit_autoIrr
+
+organise.data(nit_denit, fname="yield")
+
 organise.data(hills_sims, fname = "yield")
 organise.data(hills2_sims, fname = "yield")
 organise.data(hills3_sims, fname = "yield")
 organise.data(hills4_sims, fname = "yield")
+
+x <- organise.data(hills_sims,4,parameters)
 
 sim_start <- unique(get_param_xml(file = usms_path, "datedebut")[[1]][[1]])
 sim_end <- unique(get_param_xml(file = usms_path, "datefin")[[1]][[1]])

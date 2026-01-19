@@ -1,0 +1,97 @@
+"stn_code" "soil" "market_yield" "irrigation_type" "payback_period"
+"1" "S" "CTW" "low" "pivot I" 8.48831341256672
+"2" "S" "CTW" "low" "pivot II" 6.56063229849018
+"3" "S" "CTW" "low" "hose reel + sprinkler" 11.9817959725888
+"4" "S" "CTW" "low" "hose reel + boom cart" 11.3357066276958
+"5" "NG" "CTW" "low" "pivot I" 16.912510078702
+"6" "NG" "CTW" "low" "pivot II" 13.0091571464933
+"7" "NG" "CTW" "low" "hose reel + sprinkler" 24.062211381485
+"8" "NG" "CTW" "low" "hose reel + boom cart" 22.5590250329592
+"9" "HCC" "CTW" "low" "pivot I" 11.7593673768034
+"10" "HCC" "CTW" "low" "pivot II" 9.08009750737623
+"11" "HCC" "CTW" "low" "hose reel + sprinkler" 16.6252502152617
+"12" "HCC" "CTW" "low" "hose reel + boom cart" 15.7003032430178
+"13" "EP" "CTW" "low" "pivot I" 27.2472653382564
+"14" "EP" "CTW" "low" "pivot II" 20.0851410361039
+"15" "EP" "CTW" "low" "hose reel + sprinkler" 41.77372620203
+"16" "EP" "CTW" "low" "hose reel + boom cart" 35.9569511996223
+"17" "S" "ARY" "low" "pivot I" 13.4033902422372
+"18" "S" "ARY" "low" "pivot II" 10.1993180329277
+"19" "S" "ARY" "low" "hose reel + sprinkler" 19.4182648995252
+"20" "S" "ARY" "low" "hose reel + boom cart" 17.8304436909593
+"21" "NG" "ARY" "low" "pivot I" 31.5427697571216
+"22" "NG" "ARY" "low" "pivot II" 23.8621354668501
+"23" "NG" "ARY" "low" "hose reel + sprinkler" 46.160503585275
+"24" "NG" "ARY" "low" "hose reel + boom cart" 41.8996184943814
+"25" "HCC" "ARY" "low" "pivot I" 18.3633747924627
+"26" "HCC" "ARY" "low" "pivot II" 14.0217972944637
+"27" "HCC" "ARY" "low" "hose reel + sprinkler" 26.4492254422393
+"28" "HCC" "ARY" "low" "hose reel + boom cart" 24.4496503800956
+"29" "EP" "ARY" "low" "pivot I" 58.5267916907144
+"30" "EP" "ARY" "low" "pivot II" 40.2423983948091
+"31" "EP" "ARY" "low" "hose reel + sprinkler" 103.632909504553
+"32" "EP" "ARY" "low" "hose reel + boom cart" 75.8378327264641
+"33" "S" "CLO" "low" "pivot I" 5.51692330946606
+"34" "S" "CLO" "low" "pivot II" 4.33425782804618
+"35" "S" "CLO" "low" "hose reel + sprinkler" 7.58657823220759
+"36" "S" "CLO" "low" "hose reel + boom cart" 7.39713655643366
+"37" "NG" "CLO" "low" "pivot I" 12.2650916667787
+"38" "NG" "CLO" "low" "pivot II" 9.57267002485123
+"39" "NG" "CLO" "low" "hose reel + sprinkler" 17.042430315727
+"40" "NG" "CLO" "low" "hose reel + boom cart" 16.4187400558024
+"41" "HCC" "CLO" "low" "pivot I" 7.5253874897106
+"42" "HCC" "CLO" "low" "pivot II" 5.91548018003196
+"43" "HCC" "CLO" "low" "hose reel + sprinkler" 10.3394371794894
+"44" "HCC" "CLO" "low" "hose reel + boom cart" 10.0914796694691
+"45" "EP" "CLO" "low" "pivot I" 13.4872891121452
+"46" "EP" "CLO" "low" "pivot II" 10.3994670716686
+"47" "EP" "CLO" "low" "hose reel + sprinkler" 19.1129223163363
+"48" "EP" "CLO" "low" "hose reel + boom cart" 18.0009549450376
+"49" "S" "CTW" "high" "pivot I" 6.51707182878335
+"50" "S" "CTW" "high" "pivot II" 5.08911150700184
+"51" "S" "CTW" "high" "hose reel + sprinkler" 9.04797712121149
+"52" "S" "CTW" "high" "hose reel + boom cart" 8.72523565654419
+"53" "NG" "CTW" "high" "pivot I" 12.9667030222599
+"54" "NG" "CTW" "high" "pivot II" 10.0884677042827
+"55" "NG" "CTW" "high" "hose reel + sprinkler" 18.1082689685702
+"56" "NG" "CTW" "high" "hose reel + boom cart" 17.3445670781988
+"57" "HCC" "CTW" "high" "pivot I" 9.02595124200942
+"58" "HCC" "CTW" "high" "pivot II" 7.04308005636216
+"59" "HCC" "CTW" "high" "hose reel + sprinkler" 12.5458874143772
+"60" "HCC" "CTW" "high" "hose reel + boom cart" 12.0820135295865
+"61" "EP" "CTW" "high" "pivot I" 20.6273173746303
+"62" "EP" "CTW" "high" "pivot II" 15.538540376507
+"63" "EP" "CTW" "high" "hose reel + sprinkler" 30.4103481604281
+"64" "EP" "CTW" "high" "hose reel + boom cart" 27.3709822328466
+"65" "S" "ARY" "high" "pivot I" 10.2437207738782
+"66" "S" "ARY" "high" "pivot II" 7.90458458877261
+"67" "S" "ARY" "high" "hose reel + sprinkler" 14.4980572299264
+"68" "S" "ARY" "high" "hose reel + boom cart" 13.6744972278996
+"69" "NG" "ARY" "high" "pivot I" 24.0651761786522
+"70" "NG" "ARY" "high" "pivot II" 18.48726733099
+"71" "NG" "ARY" "high" "hose reel + sprinkler" 34.3115944993775
+"72" "NG" "ARY" "high" "hose reel + boom cart" 32.0895187153478
+"73" "HCC" "ARY" "high" "pivot I" 14.0487123501991
+"74" "HCC" "ARY" "high" "pivot II" 10.8691810239844
+"75" "HCC" "ARY" "high" "hose reel + sprinkler" 19.7981793051131
+"76" "HCC" "ARY" "high" "hose reel + boom cart" 18.7659800812297
+"77" "EP" "ARY" "high" "pivot I" 43.363350076582
+"78" "EP" "ARY" "high" "pivot II" 31.0181205623668
+"79" "EP" "ARY" "high" "hose reel + sprinkler" 70.4874692756064
+"80" "EP" "ARY" "high" "hose reel + boom cart" 56.7814719586643
+"81" "S" "CLO" "high" "pivot I" 4.25586988977167
+"82" "S" "CLO" "high" "pivot II" 3.36530927222427
+"83" "S" "CLO" "high" "hose reel + sprinkler" 5.79372116103126
+"84" "S" "CLO" "high" "hose reel + boom cart" 5.71531722854375
+"85" "NG" "CLO" "high" "pivot I" 9.44355879750009
+"86" "NG" "CLO" "high" "pivot II" 7.4297777515754
+"87" "NG" "CLO" "high" "hose reel + sprinkler" 12.9572092033933
+"88" "NG" "CLO" "high" "hose reel + boom cart" 12.6664224599877
+"89" "HCC" "CLO" "high" "pivot I" 5.8061802924249
+"90" "HCC" "CLO" "high" "pivot II" 4.59319170656813
+"91" "HCC" "CLO" "high" "hose reel + sprinkler" 7.89898214459488
+"92" "HCC" "CLO" "high" "hose reel + boom cart" 7.79808492298713
+"93" "EP" "CLO" "high" "pivot I" 10.3479021741897
+"94" "EP" "CLO" "high" "pivot II" 8.06579874663845
+"95" "EP" "CLO" "high" "hose reel + sprinkler" 14.4084887913539
+"96" "EP" "CLO" "high" "hose reel + boom cart" 13.8478498334302
