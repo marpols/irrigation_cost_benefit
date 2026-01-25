@@ -460,7 +460,7 @@ cost.gains.all.years <- function(dataset, stn, soil_name){
 }
 
 
-yield.gain.plot <- function(dataset){
+yield.gain.plot <- function(dataset, column){
   #dataset = gs_data
   
   data_summary <- dataset |> group_by(stn_code, soil) |>
@@ -470,7 +470,7 @@ yield.gain.plot <- function(dataset){
                          levels = c("S", "NG", "HCC", "EP"))
   
   plot <- ggplot(data_summary) +
-    geom_col(aes(x = stn_code, y = total.gain, fill = soil),
+    geom_col(aes(x = stn_code, y = .data(columns), fill = soil),
              position = "dodge") +
     scale_fill_manual(values = c(
       "ARY" = "#33A02C",

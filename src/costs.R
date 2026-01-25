@@ -9,7 +9,7 @@ market_yield_low <- 0.70
 
 market_yield_high <- 0.90
 
-market_price <- 400.92 # $CAD/t.
+market_price <- 400.92 # $CAD/t., 2024
 
 rotation_2001 <- seq(2001,2024, by  = 3)
 rotation_2002 <- seq(2002,2024, by  = 3)

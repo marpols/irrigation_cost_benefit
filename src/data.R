@@ -147,6 +147,22 @@ to.df <- function(sim_list){
   })
 }
 
+to.df.irr <- function(list){
+  lapply(list, function(lst){
+    yrlydf <- lapply(lst,function(l){
+      df <- as.data.frame(l[1:2])
+      df$irr.dates <- list(l$irr_dates)
+      df
+    })
+    irrdf <- bind_rows(yrlydf, .id = "column_label")
+    irrdf$ian <- as.numeric(str_extract(irrdf$column_label,"\\d+"))
+    irrdf$scenario <- str_extract(irrdf$column_label, "[A-Z]+_[A-Z]+")
+    irrdf
+  })
+}
+
+#merge.dfs <- function(df1, df2)
+
 add.climate <- function(yields, clim){
   
   clim$stn_code <- lapply(clim$station, get.stn.code) |> unlist()
