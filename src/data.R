@@ -1,7 +1,8 @@
 organise.data <- function(sim_list, index, parameters,
                           group_by = NULL,
                           fname="",
-                          summary_function=""){
+                          summary_function="",
+                          projections = FALSE){
   #organises data from a list of sims.
   #list should have two elements: [[1]] stressed [[2]] no stress
   #each element is a list of sims organised by a chosen grouping
@@ -38,7 +39,15 @@ organise.data <- function(sim_list, index, parameters,
   save.to.xl(summary, writedir, fname)
   
   aggregated <- do.call(rbind, summary)
-  aggregated$scenario <- str_extract(rownames(aggregated),"\\w*")
+  if(projections){
+    aggregated$scenario <- rownames(aggregated)
+    aggregated$soil <- str_extract(rownames(aggregated), ".{3}$")
+    aggregated$model <- str_extract(rownames(aggregated), ".*(?=_ssp)")
+    aggregated$ssp <- str_extract(rownames(aggregated), "ssp\\d{3}")
+  } else {
+    aggregated$scenario <- str_extract(rownames(aggregated),"\\w*")
+  }
+  
   write.table(aggregated,
               file = file.path(writedir,
                                sprintf("%s_%s_all.csv", 
@@ -49,6 +58,8 @@ organise.data <- function(sim_list, index, parameters,
   saveRDS(aggregated, sprintf("data/%s_%s_all.RDS", 
                               str_extract(writedir, "\\w*$"),
                               fname))
+  
+  return(aggregated)
 }
 
 summarise.yield.data <- function(sim_list, group_by, out_dir){
@@ -147,7 +158,7 @@ to.df <- function(sim_list){
   })
 }
 
-to.df.irr <- function(list){
+to.df.irr <- function(list, projections = FALSE){
   lapply(list, function(lst){
     yrlydf <- lapply(lst,function(l){
       df <- as.data.frame(l[1:2])
@@ -155,8 +166,13 @@ to.df.irr <- function(list){
       df
     })
     irrdf <- bind_rows(yrlydf, .id = "column_label")
-    irrdf$ian <- as.numeric(str_extract(irrdf$column_label,"\\d+"))
-    irrdf$scenario <- str_extract(irrdf$column_label, "[A-Z]+_[A-Z]+")
+    irrdf$ian <- as.numeric(str_extract(irrdf$column_label,"\\d{4}"))
+    if(projections){
+      irrdf$scenario <- irrdf$column_label
+    } else {
+      irrdf$scenario <- str_extract(irrdf$column_label, "[A-Z]+_[A-Z]+")
+    }
+    
     irrdf
   })
 }
@@ -312,27 +328,50 @@ get.data <- function(sims, param){
 }
 
 #Reading mod b files
-get.modb.files <- function(dir){
+get.modb.files <- function(dir, projections = FALSE){
   files <- list.files(dir,"mod_b", full.names=TRUE, recursive=TRUE)
   f <- lapply(files, readLines) 
-  names(f) <- str_extract(files, "\\d+_[A-Z]+_[A-Z]+")
+  if(projections){
+      names(f) <- str_extract(files, "(?<=mod_b).*(?=_hills)")
+    } else {
+      names(f) <- str_extract(files, "\\d+_[A-Z]+_[A-Z]+")
+    }
+                     
   return(f)
 }
 
-get.irr.info <- function(txt_list){
-  scen <- names(txt_list) |> str_replace("\\d+_", "") |> unique()
-  info <- lapply(scen,
-                 function(s){
-                   group <- txt_list[grep(s, names(txt_list))]
-                   years <- names(group) |> 
-                     str_replace(paste("_",s,sep=""),"") |> as.numeric()
-                   lapply(group, function(g){
-                     list("app_irr" = get.auto.irr(g),
-                          "precip+irr" = get.precip.irr(g),
-                          "irr_dates" = get.irr.dates(g))
+get.irr.info <- function(txt_list, projection = TRUE){
+  if(projection){
+    scen <- names(txt_list)
+    info <- lapply(scen,
+                   function(s){
+                     group <- txt_list[grep(s, names(txt_list))]
+                     years <- names(group) |> 
+                       str_extract("(?<=ssp\\d{3}_)\\d{4}") |> as.numeric()
+                     lapply(group, function(g){
+                       list("app_irr" = get.auto.irr(g),
+                            "precip+irr" = get.precip.irr(g),
+                            "irr_dates" = get.irr.dates(g))
+                     })
                    })
-                 })
+  } else {
+    scen <- names(txt_list) |> str_replace("\\d+_", "") |> unique()
+    info <- lapply(scen,
+                   function(s){
+                     group <- txt_list[grep(s, names(txt_list))]
+                     years <- names(group) |> 
+                       str_replace(paste("_",s,sep=""),"") |> as.numeric()
+                     lapply(group, function(g){
+                       list("app_irr" = get.auto.irr(g),
+                            "precip+irr" = get.precip.irr(g),
+                            "irr_dates" = get.irr.dates(g))
+                     })
+                   })
+  }
+  
+
   names(info) <- scen
+  return(info)
   #saveRDS(info, "data/irr_max30.RDS")
 }
 
@@ -355,7 +394,8 @@ get.precip.irr <- function(txt){
 
 get.irr.dates <- function(txt){
   i <- grep("Irrigation",txt)
-  if(is_empty(i)){
+  j <- grep("No irrigation", txt)
+  if(purrr::is_empty(i) | !(purrr::is_empty(j))){
     c <- 0
   } else {
     dates <- txt[(i[1]+1):(i[2]-1)]

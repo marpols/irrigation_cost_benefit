@@ -5,7 +5,7 @@ outdir <- "~/Research/Project - Irrigation Assessment/Results - 20260108"
 if (!dir.exists(outdir)) dir.create(outdir)
 
 javastics_path <- "C:\\Users\\marpo\\Documents\\Research\\STICS\\JavaSTICS-1.5.3-STICS-10.3.0"
-workspace <- "irrigation_assessment"
+workspace <- "irrigation_assessment_projections"
 
 usms_path <- file.path(javastics_path, workspace, "usms.xml")
 usms <- get_usms_list(file = usms_path)
@@ -17,13 +17,51 @@ usm_files <- get_usms_files(file.path(javastics_path,
 load.climate()
 
 #sims grouped by weather station x soil type
-hills_sims <- get.mods.files("RESULTS", version = "hills")
-hills2_sims <- get.mods.files("RESULTS", version = "hills2")
-hills3_sims <- get.mods.files("RESULTS", version = "hills3")
-hills4_sims <- get.mods.files("RESULTS", version = "hills4")
+# hills_sims <- get.mods.files("RESULTS", version = "hills")
+# hills2_sims <- get.mods.files("RESULTS", version = "hills2")
+# hills3_sims <- get.mods.files("RESULTS", version = "hills3")
+# hills4_sims <- get.mods.files("RESULTS", version = "hills4")
 
 nit_denit <- hills_sims$denit
 autoirr <- hills_sims$denit_autoIrr
+
+
+#projections
+projections <- get.mods.files("RESULTS")
+#projections_irr_30mm <- projections_noirr$projections_autoirr
+#projections_noirr <- projections_noirr$projections_noirr_v2
+
+projections_noirr <- organise.data(projections,4,parameters)
+projections_autoirr <- organise.data(projections,2,parameters, 
+                                     fname = "summary",
+                                     projections = TRUE)
+
+all_data <- left_join(projections_noirr, projections_autoirr, 
+                      by = c("scenario", "ian", "soil", "model", "ssp"))
+
+all_data$yieldgain_30mm <- pmax(all_data$pdsfruitfrais.y - all_data$pdsfruitfrais.x,0)
+all_data$changeQles_30mm <- all_data$Qles.y - all_data$Qles.x
+all_data$changeQles_30mm_argmax <- pmax(all_data$Qles.y - all_data$Qles.x,0)
+all_data$changeN2O_30mm <- all_data$Qem_N2O.y - all_data$Qem_N2O.x
+all_data$changeN2O_30mm_argmax <- pmax(all_data$Qem_N2O.y - all_data$Qem_N2O.x,0)
+
+modb_files <- get.modb.files(file.path(javastics_path,
+                                       workspace,
+                                       "RESULTS",
+                                       "projections_autoirr"),
+                             projections = TRUE)
+
+irr.info <- get.irr.info(modb_files, projection = TRUE) |> 
+  to.df.irr(projections = TRUE) |> bind_rows()
+
+all_data <- left_join(all_data, irr.info, by = c("scenario", "ian"))
+
+
+saveRDS(all_data,"data/all_data_projections.RDS")
+
+
+
+#historical
 
 organise.data(nit_denit, fname="yield")
 

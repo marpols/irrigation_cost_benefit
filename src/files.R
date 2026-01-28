@@ -99,7 +99,7 @@ save.to.xl <- function(list, outdir, fname){
   #list = list of data.frames
   fname <- paste0(str_extract(outdir, "\\w*$"), "_", fname, ".xlsx")
 
-  writexl::write_xlsx(list, file.path(outdir, fname))
+  openxlsx::write.xlsx(list, file.path(outdir, fname))
 }
 
 save.to.csv <- function(list, outdir, grouping){
