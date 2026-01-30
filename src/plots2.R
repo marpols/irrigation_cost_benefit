@@ -3,7 +3,13 @@ payback.period.plot2 <- function(dataset, mrkt_yld,
                                  stn_col, 
                                  mrkt_yld_col,
                                  irr_col,
-                                 pb_col){
+                                 pb_col,
+                                 txtsize = c("x.txt" = 15,
+                                             "y.txt" = 15,
+                                             "x.title" = 15,
+                                             "y.title" = 15,
+                                             "grids" = 15),
+                                 plotsize = c(20,15)){
   
   dataset <- dataset |>
     dplyr::filter(.data[[mrkt_yld_col]] == mrkt_yld) |>
@@ -36,14 +42,19 @@ payback.period.plot2 <- function(dataset, mrkt_yld,
          x = "weather station",
          fill = "Soil") +
     theme_minimal() +
-    theme(legend.position = "bottom") +
+    theme(legend.position = "bottom",
+          axis.text.x = element_text(size = txtsize[1]),
+          axis.text.y = element_text(size = txtsize[2]),
+          axis.title.x = element_text(size = txtsize[3]),
+          axis.title.y = element_text(size = txtsize[4]),
+          strip.text.x = element_text(size = txtsize[5])) +
     facet_grid(cols = vars(irrigation_type))
   
   ggsave(sprintf("payback_period_%d.png", mrkt_yld),
          plot = plot,
          path = outdir,
-         width = 20,
-         height = 15,
+         width = plotsize[1],
+         height = plotsize[2],
          units = "cm")
 
   plot
@@ -56,10 +67,16 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-increase.plot <- function(dataset, mrkt_yld, 
+increase.plot <- function(dataset, mrkt_yld,
                           stn_col,
                           mrkt_yld_col,
-                          irr_col){
+                          irr_col,
+                          txtsize = c("x.txt" = 15,
+                                      "y.txt" = 15,
+                                      "x.title" = 15,
+                                      "y.title" = 15,
+                                      "grids" = 15),
+                          plotsize = c(22,18)){
   thr <- 20
   
   df_delta <- dataset |>
@@ -93,7 +110,12 @@ increase.plot <- function(dataset, mrkt_yld,
       "CTW" = "#CAB2D6",
       "CLO" = "#FDBF6F")) +
     theme_minimal() +
-    theme(legend.position = "bottom")
+    theme(legend.position = "bottom",
+          axis.text.x = element_text(size = txtsize[1]),
+          axis.text.y = element_text(size = txtsize[2]),
+          axis.title.x = element_text(size = txtsize[3]),
+          axis.title.y = element_text(size = txtsize[4]),
+          strip.text.x = element_text(size = txtsize[5]))
 }
 
 increase.plot(paybackperiods_avg_all2, 90, "stn", "mrktyld", "irr.type")
@@ -114,7 +136,14 @@ delta_paybackperiods <- paybackperiods_avg_all2 |>
 plot.change <- function(dataset, mrkt_yld, 
                   stn_col,
                   mrkt_yld_col,
-                  irr_col){
+                  irr_col,
+                  txtsize = c("x.txt" = 15,
+                              "y.txt" = 15,
+                              "x.title" = 15,
+                              "y.title" = 15,
+                              "grids" = 15),
+                  plotsize = c(22,18)){
+  
   pd  <- position_dodge(width = 0.8)
   
   dataset <- dataset |>
@@ -153,6 +182,9 @@ plot.change <- function(dataset, mrkt_yld,
     theme_minimal() + 
     theme(axis.title.y = element_blank(),
           axis.title.x = element_blank(),
+          axis.text.x = element_text(size = txtsize[1]),
+          axis.text.y = element_text(size = txtsize[2]),
+          strip.text.x = element_text(size = txtsize[5]),
           plot.margin = common_margin) +
     guides(fill = "none")
   
@@ -177,7 +209,11 @@ plot.change <- function(dataset, mrkt_yld,
     labs(y = "Increase in payback period (years)") +
     theme_minimal() +
     theme(axis.title.x = element_blank(),
-          plot.margin = common_margin) +
+          plot.margin = common_margin,
+          axis.text.x = element_text(size = txtsize[1]),
+          axis.text.y = element_text(size = txtsize[2]),
+          axis.title.y = element_text(size = txtsize[4]),
+          strip.text.x = element_text(size = txtsize[5])) +
     guides(fill = "none")
   
   plot_max <- ggplot(dataset,
@@ -203,7 +239,11 @@ plot.change <- function(dataset, mrkt_yld,
     theme_minimal() +
     theme(axis.title.y = element_blank(),
           legend.position = "bottom",
-          plot.margin = common_margin) +
+          plot.margin = common_margin,
+          axis.text.x = element_text(size = txtsize[1]),
+          axis.text.y = element_text(size = txtsize[2]),
+          axis.title.x = element_text(size = txtsize[3]),
+          strip.text.x = element_text(size = txtsize[5])) +
     guides(fill = "none")
   
   aligned <- cowplot::align_plots(plot_min, plot_med, plot_max, align = "v", axis = "l")
@@ -228,11 +268,12 @@ plot.change <- function(dataset, mrkt_yld,
     cowplot::draw_plot(p_stack, y = 0, height = 0.90)
   
   save_plot(
-    filename = sprintf("temp/plots20260122/payback_delta_by_cost%d.png",
+    filename = sprintf("%s/payback_delta_by_cost%d.png",
+                       outdir,
                        mrkt_yld),
     plot = final_plot,      # whatever object ggdraw() + draw_plot() returns
-    base_width = 22,             # cm or inches (see units)
-    base_height = 18,
+    base_width = plotsize[1],             # cm or inches (see units)
+    base_height = plotsize[2],
     units = "cm",
     dpi = 300
   )

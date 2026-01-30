@@ -1,7 +1,7 @@
 lapply(list.files("src", pattern = ".R", full.names = T), source)
 
 outdir <- rstudioapi::selectDirectory()
-outdir <- "~/Research/Project - Irrigation Assessment/Results - 20260108"
+outdir <- "~/Research/Project - Irrigation Assessment/Results - 20260129"
 if (!dir.exists(outdir)) dir.create(outdir)
 
 javastics_path <- "C:\\Users\\marpo\\Documents\\Research\\STICS\\JavaSTICS-1.5.3-STICS-10.3.0"
