@@ -1,51 +1,54 @@
-get.mods.files <- function(dir = "",
-                           usms. = usms,
-                           version = "",
-                           group_by = NULL) {
+get_mods <- function(dir = "RESULTS",
+                           usm_list = usms,
+                           exp_id = "",
+                           run_id = "",
+                           ver_num = NULL,
+                           stn_code = "",
+                           soil_code = "",
+                           ssp = "",
+                           group = "") {
   
-  dirs <- list.dirs(file.path(javastics_path, workspace, dir),
+  exp_dir <- ifelse(is.null(ver_num),
+                     sprintf("%s_%s", exp_id, run_id),
+                     sprintf("%s_%s_%d", exp_id, run_id, ver_num)) 
+  
+  exp_files <- list.files(file.path(javastics_path, 
+                                 workspace, 
+                                 dir, 
+                                 exp_dir),
                     full.names = TRUE,
-                    recursive = F) |>
-    grep(sprintf("%s$|%s_", version, version), x = _, value = TRUE)
+                    recursive = TRUE) |>
+    grep("mod_s", x=_, value = TRUE)
   
-  ver_usms <- grep(sprintf("%s$", version), usms., value = T)
-  
-  group <- if(is.null(group_by)) unique(get.group.name(ver_usms)) else group_by
-  
-  all_sims <- list()
-  
-  for (d in dirs) {
-    
-    name <- str_extract(d, sprintf("%s\\w*$", version))
-    
-    files <- list.files(
-      file.path(d),
-      full.names = TRUE,
-      recursive = TRUE
-    ) |>
-      grep("mod_s", x = _, value = TRUE)
-    
-    
-    files <- lapply(group, function(g) {
-      grep(g, files, value = T)
-    })
-    
-    sims <- lapply(files, function(f){
-      group_sims <- lapply(f, read.csv, sep = ";")
-      names(group_sims) <- lapply(f, get.file.name)
-      lapply(group_sims, function(c) {
-        class(c) <- c("STICS simulation", "data.frame")
-        c
-      })
-    })
-
-    names(sims) <- group
-    
-    all_sims[[str_extract(d, "\\w*$")]] <- sims
+  if(stn_code != ""){
+    exp_files <- grep(stn_code, exp_files, value = TRUE)
+  }
+  if(soil_code != ""){
+    exp_files <- grep(soil_code, exp_files, value = TRUE)
+  }
+  if(ssp != ""){
+    exp_files <- grep(ssp, exp_files, value = TRUE)
+  }
+  if (group != ""){
+    exp_files <- grep(group, exp_files, value = T)
   }
   
-  return(all_sims)
+  sims <- lapply(exp_files, function(d){
+    name <- str_extract(d, "\\w*-*\\w*-*\\w*.sti") |>
+      str_remove("mod_s") |> str_remove(".sti")
+    ids <- str_split(name, "_") |> unlist()
+    mod_s <- read.csv(d, sep=";")
+    mod_s["soil_code"] <- ifelse(length(ids) == 6, ids[5], ids[4])
+    mod_s["stn_code"] <- ifelse(length(ids) == 6, ids[4], ids[3])
+    mod_s["model"] <- ifelse(length(ids) == 6, ids[1], NA)
+    mod_s["ssp"] <- ifelse(length(ids) == 6, ids[2], NA)
+    mod_s["file_name"] <- name
+    mod_s <- mod_s |> relocate("stn_code", "soil_code", "model", "ssp")
+    #class(mod_s) <- c("STICS simulation", "data.frame")
+    return (mod_s)
+  })
   
+  return(purrr::list_rbind(sims))
 }
 
 get.groups <- function(sims){
