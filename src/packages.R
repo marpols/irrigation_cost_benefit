@@ -1,11 +1,20 @@
-packages <- c("SticsRPacks", "stringr", "dplyr", "ggplot2", "rlang", "scales",
-              "readxl", "writexl", "purrr", "tidyr")
+packages <- c("SticsRPacks",
+              "dplyr",
+              "ggplot2",
+              "data.table",
+              "purrr",
+              "STICSdt",
+              "SPEI",
+              "tidyextreme",
+              "lubridate")
 
 invisible(lapply(packages, function(p) {
   if (!(p %in% installed.packages())) {
     if (p == "SticsRPacks") {
       devtools::install_github("SticsRPacks/SticsRPacks@*release")
       devtools::install_github("SticsRPacks/CroPlotR@*release")
+    } else if (p == "STICSdt") {
+      devtools::install_github("marpols/STICSDataTools", force = TRUE)
     } else {
       install.packages(p, character.only = T)
     }
@@ -13,5 +22,4 @@ invisible(lapply(packages, function(p) {
   library(p, character.only = TRUE)
 }))
 
-
-#"precintcon"
+remove(packages)
