@@ -70,15 +70,6 @@ pbpplot_proj <- function(df, pbcol){
   
 }
 
-pbpplot_hist(PP_hist, "PP70") + labs(subtitle = "Marketable Yield 70% of Total Yield")
-pbpplot_hist(PP_hist, "PP90") + labs(subtitle = "Marketable Yield 90% of Total Yield")
 
-
-pbpplot_proj(PP_proj_means, "PP70_mean") + labs(subtitle = "Marketable Yield 70% of Total Yield") +
-  coord_cartesian(ylim = c(0,8))
-pbpplot_proj(PP_proj_means, "PP90_mean") + labs(subtitle = "Marketable Yield 90% of Total Yield")
-
-STICSdt:::plot_variable(analysis_hist, "yg")
-STICSdt:::plot_variable_grid(analysis_hist, "yield", x_axis = "ian", grid_rows = "soilcode", grid_cols = "stncode")
 
 

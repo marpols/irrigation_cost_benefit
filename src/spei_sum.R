@@ -16,12 +16,12 @@ spei_sum <- function(df,
 
   
   nyrs <- speimo[
-    , .(n_years = .N), by = c(by, "class")
+    , .(n_years = .N), by = c(by, "spei_class")
   ][
-    , class := factor(class, levels = classes)
+    , spei_class := factor(spei_class, levels = classes)
   ] |>
     data.table::dcast(
-      as.formula(paste("class ~", paste(by, collapse = " + "))),
+      as.formula(paste("spei_class ~", paste(by, collapse = " + "))),
       value.var = "n_years",
       fill = 0L,
       drop = FALSE

@@ -50,13 +50,13 @@ CBnet_ext <- function(df,
         )
       }) |> purrr::list_flatten()
       
-      l70 <- newlist[which(names(l) == "70")] |> 
+      l70 <- newlist[which(names(newlist) == "70")] |> 
         purrr::list_rbind() |>
         STICSdt::get_mean(var = paste0(CB70, "_sum"),
                           by = by) |>
         dplyr::rename("{CB70}_sum" := paste0(CB70, "_sum_mean"))
       
-      l90 <- newlist[which(names(l) == "90")] |> 
+      l90 <- newlist[which(names(newlist) == "90")] |> 
         purrr::list_rbind() |>
         STICSdt::get_mean(var = paste0(CB90, "_sum"),
                           by = by) |>
@@ -65,7 +65,7 @@ CBnet_ext <- function(df,
       newlist <- list("70" = data.table::as.data.table(l70),
                     "90" = data.table::as.data.table(l90))
       
-      pbps_ext[[sys[["type"]]]][[l]] <- newlist
+      pbps_ext[[sys[["type"]]]][[l]] <<- newlist
       
     })
     

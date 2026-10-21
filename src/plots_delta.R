@@ -50,23 +50,4 @@ plots_delta_proj <- function(df, var){
   
 }
 
-plots_delta_hist(analysis_hist, "dnl") + labs(y = expression(paste(Delta, "Qles (kg N ", ha^-1, " )")),
-                                              x = "year",
-                                              title = "Change in N leaching") +
-  theme(axis.text.x = element_text(angle = 55, hjust = 1)) +
-  theme(panel.spacing.x = unit(0.5, "cm"))
 
-plots_delta_hist(analysis_hist, "dn2o")
-plots_delta_hist(analysis_hist[dplntN !=0,], "dplntN")
-plots_delta_hist(analysis_hist, "totir")
-
-plots_delta_proj(analysis_proj[dnl != 0,], "dnl") +
-  coord_cartesian(ylim = c(-20, 15)) + labs(y = expression(paste(Delta, "Qles (kg N ", ha^-1, " )")),
-                                            x = "year",
-                                            title = "Change in N leaching") +
-  theme(axis.text.x = element_text(angle = 55, hjust = 1)) +
-  theme(panel.spacing.x = unit(0.5, "cm"))
-
-plots_delta_proj(analysis_proj, "dn2o")
-plots_delta_proj(analysis_proj[dplntN !=0,], "dplntN")
-plots_delta_proj(analysis_proj, "totir")

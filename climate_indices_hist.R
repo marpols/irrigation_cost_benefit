@@ -49,5 +49,5 @@ TX30_hist <- calc_clim_index(climate_hist,
                              end_mo = 9)
 
 cihistl <- list(R1mm_hist, R10mm_hist, R20mm_hist, CWD_hist, CDD_hist, TX35_hist, TX30_hist)
-ci_hist <- cihistl %>% 
-  reduce(left_join, by = c("stncode", "ian", "year"))
+ci_hist <- cihistl |> 
+  purrr::reduce(left_join, by = c("stncode", "ian", "year"))

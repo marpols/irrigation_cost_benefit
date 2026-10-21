@@ -1,14 +1,15 @@
-calc_pbps <- function(l,
+calc_pbps <- function(dtl,
                       by = c("stncode", "soilcode"),
-                      means = FALSE){
+                      means = FALSE,
+                      nyrs = 20){
   PPcol70 <- "PP70"
   PPcol90 <- "PP90"
   syscosts <- irrcosts()
 
-  pbps <- lapply(names(l), function(sys){
+  pbps <- lapply(names(dtl), function(sys){
 
-    dt <- STICSdt::join_dfs(list(l[[sys]][["70"]],
-                                 l[[sys]][["90"]]),
+    dt <- STICSdt::join_dfs(list(dtl[[sys]][["70"]],
+                                 dtl[[sys]][["90"]]),
                             by = by) |>
       data.table::as.data.table()
     
@@ -33,7 +34,8 @@ calc_pbps <- function(l,
   
   if (means) {
     pbps_means <- STICSdt::summarise_vars(pbps,
-                                        var = c("PP70", "PP90"),
+                                        var = c("CBnet70", "PP70",
+                                                "CBnet90", "PP90"),
                                         type = "mean",
                                         by = c("ssp", "soilcode", "system")) |>
       data.table::as.data.table()

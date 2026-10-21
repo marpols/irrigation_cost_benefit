@@ -16,9 +16,9 @@ hist_fixed <- lapply(list("historic_fixed_noirr",
                       usm_name_format = "location_year_stncode_soilcode_ver",
                       ws = "irrigation_assessment",
                       return_type = 1
-                    ))
+                    )) |> purrr::set_names("noirr", "autoirr")
 
-hist_dynamic <- lapply(list("historic_dynamic_noirr",
+hist_dynamic <- lapply(list("historic_dynamic_noirr-pet",
                             "historic_dynamic_autoirr"), \(x)
                        STICSdt::get_mod_s(
                          exp_dir = x,
@@ -26,7 +26,7 @@ hist_dynamic <- lapply(list("historic_dynamic_noirr",
                          usm_name_format = "location_year_stncode_soilcode_ver",
                          ws = "irrigation_assessment",
                          return_type = 1
-                       ))
+                       )) |> purrr::set_names("noirr", "autoirr")
 
 proj_fixed <- lapply(list("projected_fixed_noirr",
                          "projected_fixed_autoirr"), \(x)
@@ -36,7 +36,7 @@ proj_fixed <- lapply(list("projected_fixed_noirr",
                       usm_name_format = "model_ssp_year_stncode_soilcode_ver",
                       ws = "irrigation_assessment_projections",
                       return_type = 1
-                    )) 
+                    )) |> purrr::set_names("noirr", "autoirr")
 
 proj_dynamic <- lapply(list("projected_dynamic_noirr",
                             "projected_dynamic_autoirr"), \(x)
@@ -46,7 +46,7 @@ proj_dynamic <- lapply(list("projected_dynamic_noirr",
                          usm_name_format = "model_ssp_year_stncode_soilcode_ver",
                          ws = "irrigation_assessment_projections",
                          return_type = 1
-                       )) 
+                       )) |> purrr::set_names("noirr", "autoirr")
 
 REF <- STICSdt::get_mod_s(
   exp_dir = "REF_fixed_noirr",
@@ -54,7 +54,8 @@ REF <- STICSdt::get_mod_s(
   usm_name_format = "model_ssp_year_stncode_soilcode_ver",
   ws = "irrigation_assessment_projections",
   return_type = 1
-)
+) |> data.table::as.data.table()
+REF <- REF[ian %in% 2001:2024,]
 
 analysis_histfx <- hist_fixed[[1]] |>
   dplyr::distinct(stncode, soilcode, ian, file_name) |>
@@ -93,5 +94,11 @@ data_REF <- STICSdt::summarise_vars(REF,
                                       "Qem_N2O",
                                       "QNplante"), 
                                     type = "max", 
-                                    by = histby)
+                                    by = projby) |> 
+  data.table::as.data.table()
+
+data_REF[, c("swfac2moy_noirr","turfac2moy_noirr") := .(
+  REF[jul == 325, swfac2moy],
+  REF[jul == 325, turfac2moy]
+)]
 
